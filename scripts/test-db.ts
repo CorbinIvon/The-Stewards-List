@@ -110,7 +110,7 @@ async function main() {
 
     console.log('\n✅ All database tests passed!');
   } catch (error) {
-    console.error('\n❌ Database test failed:', error);
+    console.error('\n❌ Database test failed:', error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   } finally {
     // Clean up test data
