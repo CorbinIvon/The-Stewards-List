@@ -7,6 +7,7 @@ This guide will help you get The Stewards List up and running on your local mach
 - Node.js 18 or higher
 - npm or yarn package manager
 - Git
+- A Supabase account and project ([Create one for free](https://supabase.com))
 
 ## Quick Start
 
@@ -21,24 +22,33 @@ This guide will help you get The Stewards List up and running on your local mach
    npm install
    ```
 
-3. **Set up environment variables**
+3. **Set up Supabase**
+   - Go to [Supabase Dashboard](https://app.supabase.com)
+   - Create a new project or use an existing one
+   - Go to Project Settings > Database
+   - Copy your connection string from the "Connection string" section (use the "URI" format)
+
+4. **Set up environment variables**
    ```bash
    cp .env.example .env
    ```
    
-   The default `.env` uses SQLite for development, which requires no additional setup.
+   Edit `.env` and replace the placeholders with your Supabase connection details:
+   ```
+   DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
+   ```
 
-4. **Initialize the database**
+5. **Initialize the database**
    ```bash
    npm run db:push
    ```
 
-5. **Run the development server**
+6. **Run the development server**
    ```bash
    npm run dev
    ```
 
-6. **Open your browser**
+7. **Open your browser**
    
    Navigate to [http://localhost:3000](http://localhost:3000)
 
@@ -145,32 +155,29 @@ This will open a GUI at [http://localhost:5555](http://localhost:5555) where you
 
 ### Reset Database
 
-To reset the database and start fresh:
+To reset the database and start fresh, you can use the Supabase Dashboard or drop all tables using Prisma:
 
 ```bash
-rm prisma/dev.db
-npm run db:push
+npx prisma migrate reset
 ```
 
-### Switching to PostgreSQL
+**Warning**: This will delete all data in your database!
 
-1. Update your `.env` file:
-   ```
-   DATABASE_URL="postgresql://user:password@localhost:5432/stewards_list?schema=public"
-   ```
+Alternatively, you can use Supabase Dashboard:
+1. Go to your Supabase project
+2. Navigate to Database > Tables
+3. Delete the tables manually
+4. Run `npm run db:push` to recreate the schema
 
-2. Update `prisma/schema.prisma`:
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-     url      = env("DATABASE_URL")
-   }
-   ```
+### Using Prisma Studio
 
-3. Push the schema:
-   ```bash
-   npm run db:push
-   ```
+You can view and edit your Supabase database locally using Prisma Studio:
+
+```bash
+npm run db:studio
+```
+
+This will open a GUI at [http://localhost:5555](http://localhost:5555) where you can view and edit your data.
 
 ## Production Deployment
 
@@ -189,8 +196,15 @@ npm start
 ### Environment Variables
 
 For production, ensure you set:
-- `DATABASE_URL` - Your production database connection string
+- `DATABASE_URL` - Your Supabase production database connection string
 - `NODE_ENV=production`
+
+**Note**: For production deployments (e.g., Vercel, Netlify), use your Supabase production connection string. You can use the same Supabase project for both development and production, or create separate projects for each environment.
+
+To use connection pooling in production (recommended for serverless environments):
+```
+DATABASE_URL="postgresql://postgres.pooler:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+```
 
 ## Troubleshooting
 
@@ -204,9 +218,11 @@ PORT=3001 npm run dev
 
 ### Database Connection Issues
 
-- Ensure the database file has proper permissions
-- Check that the `DATABASE_URL` in `.env` is correct
-- Try deleting and recreating the database
+- Verify your Supabase project is active and accessible
+- Check that the `DATABASE_URL` in `.env` is correct (including password and project reference)
+- Ensure your IP address is allowed in Supabase Dashboard (Settings > Database > Connection Pooling)
+- Try using the direct connection string instead of the pooled connection
+- Check Supabase service status at [status.supabase.com](https://status.supabase.com)
 
 ### Build Errors
 

@@ -14,7 +14,7 @@ A Next.js + Prisma web application for home organization featuring user manageme
 
 - **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
-- **Database**: SQLite with Prisma ORM
+- **Database**: Supabase (PostgreSQL) with Prisma ORM
 - **Styling**: Tailwind CSS
 - **Authentication**: bcryptjs for password hashing
 
