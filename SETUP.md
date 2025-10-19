@@ -37,6 +37,8 @@ This guide will help you get The Stewards List up and running on your local mach
    ```
    DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
    ```
+   
+   **Important**: This is just an example format. Never commit actual credentials to version control! The `.env` file is already in `.gitignore` to prevent accidental commits.
 
 5. **Initialize the database**
    ```bash
@@ -203,8 +205,10 @@ For production, ensure you set:
 
 To use connection pooling in production (recommended for serverless environments):
 ```
-DATABASE_URL="postgresql://postgres.pooler:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://postgres.pooler:[YOUR-PASSWORD]@[YOUR-REGION].pooler.supabase.com:5432/postgres"
 ```
+
+Replace `[YOUR-REGION]` with your Supabase project's region (e.g., `aws-0-us-east-1`, `aws-0-eu-west-1`, etc.). You can find this in your Supabase project's database settings.
 
 ## Troubleshooting
 
