@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  createdAt    DateTime     @default(now())
+  email        String       @unique
+  username     String       @unique
+  displayName  String
+  passwordHash String
+  
+  // Relations
+  ownedTasks   Task[]       @relation("TaskOwner")
+  permissions  Permission[]
+  taskLogs     TaskLog[]
+  chats        Chat[]
+  
+  @@map("users")
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  ownerId     String
+  title       String
+  description String?
+  frequency   String?
+  
+  // Relations
+  owner       User         @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  permissions Permission[]
+  taskLogs    TaskLog[]
+  
+  @@map("tasks")
+}
+
+model Permission {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  userId     String
+  taskId     String
+  permission String
+  
+  // Relations
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, taskId])
+  @@map("permissions")
+}
+
+model TaskLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  taskId    String
+  userId    String
+  
+  // Relations
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("task_logs")
+}
+
+model Chat {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  queryKey     String
+  userId       String
+  quoteChatId  String?
+  message      String
+  
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quotedChat   Chat?    @relation("QuotedChat", fields: [quoteChatId], references: [id], onDelete: SetNull)
+  quotedBy     Chat[]   @relation("QuotedChat")
+  
+  @@map("chats")
+}
