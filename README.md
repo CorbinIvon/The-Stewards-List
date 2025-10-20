@@ -14,13 +14,14 @@ A Next.js + Prisma web application for home organization featuring user manageme
 
 - **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
-- **Database**: Supabase (PostgreSQL) with Prisma ORM
+- **Database**: PostgreSQL (local or hosted) with Prisma ORM
 - **Styling**: Tailwind CSS
 - **Authentication**: bcryptjs for password hashing
 
 ## Database Schema
 
 ### Users
+
 - `id` (String, CUID)
 - `createdAt` (DateTime)
 - `email` (String, unique)
@@ -29,6 +30,7 @@ A Next.js + Prisma web application for home organization featuring user manageme
 - `passwordHash` (String)
 
 ### Tasks
+
 - `id` (String, CUID)
 - `createdAt` (DateTime)
 - `ownerId` (String, FK to Users)
@@ -37,6 +39,7 @@ A Next.js + Prisma web application for home organization featuring user manageme
 - `frequency` (String, optional)
 
 ### Permissions
+
 - `id` (String, CUID)
 - `createdAt` (DateTime)
 - `userId` (String, FK to Users)
@@ -44,12 +47,14 @@ A Next.js + Prisma web application for home organization featuring user manageme
 - `permission` (String)
 
 ### TaskLogs
+
 - `id` (String, CUID)
 - `createdAt` (DateTime)
 - `taskId` (String, FK to Tasks)
 - `userId` (String, FK to Users)
 
 ### Chat
+
 - `id` (String, CUID)
 - `createdAt` (DateTime)
 - `queryKey` (String)
@@ -67,22 +72,26 @@ A Next.js + Prisma web application for home organization featuring user manageme
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/CorbinIvon/The-Stewards-List.git
 cd The-Stewards-List
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Set up the database:
+
 ```bash
 npm run db:push
 ```
 
 4. Run the development server:
+
 ```bash
 npm run dev
 ```
@@ -102,26 +111,31 @@ npm run dev
 ## API Endpoints
 
 ### Users
+
 - `GET /api/users` - Get all users
 - `POST /api/users` - Create a new user
   - Body: `{ email, username, displayName, password }`
 
 ### Tasks
+
 - `GET /api/tasks?ownerId={id}` - Get all tasks (optionally filter by owner)
 - `POST /api/tasks` - Create a new task
   - Body: `{ ownerId, title, description?, frequency? }`
 
 ### Permissions
+
 - `GET /api/permissions?userId={id}&taskId={id}` - Get permissions (optionally filter)
 - `POST /api/permissions` - Create a new permission
   - Body: `{ userId, taskId, permission }`
 
 ### Task Logs
+
 - `GET /api/task-logs?taskId={id}&userId={id}` - Get task logs (optionally filter)
 - `POST /api/task-logs` - Create a new task log
   - Body: `{ taskId, userId }`
 
 ### Chats
+
 - `GET /api/chats?queryKey={key}&userId={id}` - Get chats (optionally filter)
 - `POST /api/chats` - Create a new chat message
   - Body: `{ queryKey, userId, message, quoteChatId? }`
@@ -129,6 +143,7 @@ npm run dev
 ## Development
 
 The application uses:
+
 - **Next.js App Router** for routing and API routes
 - **Prisma** for database management with cascade deletes
 - **TypeScript** for type safety

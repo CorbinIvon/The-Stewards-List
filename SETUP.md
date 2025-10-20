@@ -7,51 +7,72 @@ This guide will help you get The Stewards List up and running on your local mach
 - Node.js 18 or higher
 - npm or yarn package manager
 - Git
-- A Supabase account and project ([Create one for free](https://supabase.com))
+
+You can run a local PostgreSQL instance (recommended) using Docker Compose or point the app at any existing Postgres database.
 
 ## Quick Start
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/CorbinIvon/The-Stewards-List.git
    cd The-Stewards-List
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
-3. **Set up Supabase**
-   - Go to [Supabase Dashboard](https://app.supabase.com)
-   - Create a new project or use an existing one
-   - Go to Project Settings > Database
-   - Copy your connection string from the "Connection string" section (use the "URI" format)
+3. **Run a local PostgreSQL (recommended)**
+
+Using Docker Compose (included):
+
+```bash
+docker compose up -d db
+```
+
+This starts a Postgres instance (image: postgres:15) with a default database `the_stewards_list`, username `postgres` and password `postgres`, exposed on port 5432. You can customize these in `docker-compose.yml`.
 
 4. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and replace the placeholders with your Supabase connection details:
-   ```
-   DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
-   ```
-   
-   **Important**: This is just an example format. Never commit actual credentials to version control! The `.env` file is already in `.gitignore` to prevent accidental commits.
+
+Run:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` if you changed the credentials or host/port. The default example uses:
+
+```text
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/the_stewards_list"
+```
+
+**Important**: This is just an example format. Never commit actual credentials to version control! The `.env` file is already in `.gitignore` to prevent accidental commits.
 
 5. **Initialize the database**
-   ```bash
-   npm run db:push
-   ```
+
+If you haven't generated the Prisma client yet, run:
+
+```bash
+npm run db:generate
+```
+
+To push the Prisma schema to your database (create tables):
+
+```bash
+npm run db:push
+```
 
 6. **Run the development server**
+
    ```bash
    npm run dev
    ```
 
 7. **Open your browser**
-   
+
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Verify Installation
@@ -63,6 +84,7 @@ npm run test:db
 ```
 
 You should see all tests passing:
+
 - ✓ User created
 - ✓ Task created
 - ✓ Permission created
@@ -157,23 +179,22 @@ This will open a GUI at [http://localhost:5555](http://localhost:5555) where you
 
 ### Reset Database
 
-To reset the database and start fresh, you can use the Supabase Dashboard or drop all tables using Prisma:
+To reset the local database and start fresh (DESTROYS DATA):
 
 ```bash
-npx prisma migrate reset
+npx prisma migrate reset --force
 ```
 
-**Warning**: This will delete all data in your database!
+Or stop and remove the Docker data volume if you want a full reset:
 
-Alternatively, you can use Supabase Dashboard:
-1. Go to your Supabase project
-2. Navigate to Database > Tables
-3. Delete the tables manually
-4. Run `npm run db:push` to recreate the schema
+```bash
+docker compose down -v
+docker compose up -d db
+```
 
 ### Using Prisma Studio
 
-You can view and edit your Supabase database locally using Prisma Studio:
+You can view and edit your local Postgres database using Prisma Studio:
 
 ```bash
 npm run db:studio
@@ -198,17 +219,13 @@ npm start
 ### Environment Variables
 
 For production, ensure you set:
-- `DATABASE_URL` - Your Supabase production database connection string
+
+- `DATABASE_URL` - Your Postgres production database connection string
 - `NODE_ENV=production`
 
-**Note**: For production deployments (e.g., Vercel, Netlify), use your Supabase production connection string. You can use the same Supabase project for both development and production, or create separate projects for each environment.
+**Note**: For production deployments (e.g., Vercel, Netlify), use your production Postgres connection string. You can use the same database for both development and production, or create separate databases for each environment.
 
-To use connection pooling in production (recommended for serverless environments):
-```
-DATABASE_URL="postgresql://postgres.pooler:[YOUR-PASSWORD]@[YOUR-REGION].pooler.supabase.com:5432/postgres"
-```
-
-Replace `[YOUR-REGION]` with your Supabase project's region (e.g., `aws-0-us-east-1`, `aws-0-eu-west-1`, etc.). You can find this in your Supabase project's database settings.
+If your production Postgres provider supports a pooler-style connection string, use that value for `DATABASE_URL`.
 
 ## Troubleshooting
 

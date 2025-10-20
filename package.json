@@ -4,6 +4,8 @@
   "description": "A home organization app featuring user management, task management, and task tracking.",
   "scripts": {
     "dev": "next dev",
+    "db:start": "docker compose up -d db",
+    "db:stop": "docker compose down",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
