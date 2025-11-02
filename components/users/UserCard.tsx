@@ -98,6 +98,7 @@ function getAvatarBgColor(initials: string): string {
 
   const charCode = initials.charCodeAt(0);
   const colorIndex = charCode % colors.length;
+  // eslint-disable-next-line security/detect-object-injection
   return colors[colorIndex];
 }
 
@@ -119,7 +120,10 @@ function getAvatarBgColor(initials: string): string {
  * @param user - User object to display
  * @param onClick - Optional click handler
  */
-export default function UserCard({ user, onClick }: UserCardProps): JSX.Element {
+export default function UserCard({
+  user,
+  onClick,
+}: UserCardProps): React.ReactElement {
   const initials = getUserInitials(user.displayName);
   const avatarBgColor = getAvatarBgColor(initials);
   const relativeLastLogin = formatRelativeTime(user.lastLoginAt);
@@ -130,96 +134,102 @@ export default function UserCard({ user, onClick }: UserCardProps): JSX.Element 
 
   return (
     <Link href={`/users/${user.id}`}>
-      <Card
+      <div
         className={cn(
           "transition-all duration-200 ease-in-out",
-          "hover:shadow-md hover:border-gray-300",
           "cursor-pointer",
           onClick && "hover:scale-105"
         )}
         onClick={handleCardClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleCardClick();
+          }
+        }}
       >
-        <CardBody className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              <div
-                className={cn(
-                  avatarBgColor,
-                  "w-12 h-12 sm:w-14 sm:h-14 rounded-full",
-                  "flex items-center justify-center",
-                  "text-white font-bold text-sm sm:text-base",
-                  "flex-shrink-0"
-                )}
-                aria-label={`Avatar for ${user.displayName}`}
-              >
-                {initials}
+        <Card className="hover:shadow-md hover:border-gray-300">
+          <CardBody className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                <div
+                  className={cn(
+                    avatarBgColor,
+                    "w-12 h-12 sm:w-14 sm:h-14 rounded-full",
+                    "flex items-center justify-center",
+                    "text-white font-bold text-sm sm:text-base",
+                    "flex-shrink-0"
+                  )}
+                  aria-label={`Avatar for ${user.displayName}`}
+                >
+                  {initials}
+                </div>
               </div>
-            </div>
 
-            {/* Main Content */}
-            <div className="flex-1 min-w-0">
-              {/* Name and Username */}
-              <div className="mb-2">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                  {user.displayName}
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600 truncate">
-                  @{user.username}
+              {/* Main Content */}
+              <div className="flex-1 min-w-0">
+                {/* Name and Username */}
+                <div className="mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                    {user.displayName}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">
+                    @{user.username}
+                  </p>
+                </div>
+
+                {/* Email */}
+                <p className="text-xs sm:text-sm text-gray-500 truncate mb-3">
+                  {user.email}
+                </p>
+
+                {/* Badges Container */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {/* Role Badge - Using UserRoleBadge component when available */}
+                  <Badge variant="info" size="sm" className="text-xs">
+                    {user.role}
+                  </Badge>
+
+                  {/* Status Badge */}
+                  <Badge
+                    variant={user.isActive ? "success" : "default"}
+                    size="sm"
+                    className="text-xs"
+                  >
+                    {user.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+
+                {/* Last Login */}
+                <p className="text-xs text-gray-500">
+                  Last login:{" "}
+                  <span className="font-medium">{relativeLastLogin}</span>
                 </p>
               </div>
 
-              {/* Email */}
-              <p className="text-xs sm:text-sm text-gray-500 truncate mb-3">
-                {user.email}
-              </p>
-
-              {/* Badges Container */}
-              <div className="flex flex-wrap gap-2 mb-3">
-                {/* Role Badge - Using UserRoleBadge component when available */}
-                <Badge
-                  variant="info"
-                  size="sm"
-                  className="text-xs"
+              {/* Right Arrow Indicator (for desktop) */}
+              <div className="hidden sm:flex items-center justify-center text-gray-400 group-hover:text-gray-600 transition-colors">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {user.role}
-                </Badge>
-
-                {/* Status Badge */}
-                <Badge
-                  variant={user.isActive ? "success" : "default"}
-                  size="sm"
-                  className="text-xs"
-                >
-                  {user.isActive ? "Active" : "Inactive"}
-                </Badge>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
               </div>
-
-              {/* Last Login */}
-              <p className="text-xs text-gray-500">
-                Last login: <span className="font-medium">{relativeLastLogin}</span>
-              </p>
             </div>
-
-            {/* Right Arrow Indicator (for desktop) */}
-            <div className="hidden sm:flex items-center justify-center text-gray-400 group-hover:text-gray-600 transition-colors">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+      </div>
     </Link>
   );
 }

@@ -43,14 +43,7 @@ const iconMap: Record<string, string> = {
  */
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
   (
-    {
-      children,
-      variant = "info",
-      title,
-      onDismiss,
-      className,
-      ...props
-    },
+    { children, variant = "info", title, onDismiss, className, ...props },
     ref
   ) => {
     // Variant styles with background and text colors
@@ -77,9 +70,13 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
       info: "hover:bg-blue-100 text-blue-600",
     };
 
+    // eslint-disable-next-line security/detect-object-injection
     const variantClassName = variantMap[variant] || variantMap.info;
+    // eslint-disable-next-line security/detect-object-injection
     const iconBgClassName = iconBgMap[variant] || iconBgMap.info;
+    // eslint-disable-next-line security/detect-object-injection
     const dismissClassName = dismissBgMap[variant] || dismissBgMap.info;
+    // eslint-disable-next-line security/detect-object-injection
     const icon = iconMap[variant] || iconMap.info;
 
     return (
@@ -87,11 +84,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         ref={ref}
         role="alert"
         aria-live={variant === "error" ? "assertive" : "polite"}
-        className={cn(
-          "flex gap-3 rounded-md p-4",
-          variantClassName,
-          className
-        )}
+        className={cn("flex gap-3 rounded-md p-4", variantClassName, className)}
         {...props}
       >
         {/* Icon */}
@@ -107,14 +100,8 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
 
         {/* Content */}
         <div className="flex flex-1 flex-col gap-1">
-          {title && (
-            <h3 className="font-semibold">
-              {title}
-            </h3>
-          )}
-          <div className="text-sm">
-            {children}
-          </div>
+          {title && <h3 className="font-semibold">{title}</h3>}
+          <div className="text-sm">{children}</div>
         </div>
 
         {/* Dismiss button */}

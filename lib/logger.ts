@@ -131,6 +131,7 @@ function writeLog(entry: LogEntry): void {
   } else if (entry.level === LogLevel.WARN) {
     console.warn(formatted);
   } else {
+    // eslint-disable-next-line no-console
     console.log(formatted);
   }
 

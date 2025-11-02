@@ -11,21 +11,21 @@ import type {
   ApiResponse,
   PaginatedResponse,
   TaskLogWithRelations,
-  TaskLogAction,
 } from "@/lib/types";
+import { TaskLogAction } from "@/lib/types";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
 const VALID_ACTIONS: TaskLogAction[] = [
-  "CREATED",
-  "UPDATED",
-  "COMPLETED",
-  "CANCELLED",
-  "ASSIGNED",
-  "UNASSIGNED",
-  "COMMENTED",
+  TaskLogAction.CREATED,
+  TaskLogAction.UPDATED,
+  TaskLogAction.COMPLETED,
+  TaskLogAction.CANCELLED,
+  TaskLogAction.ASSIGNED,
+  TaskLogAction.UNASSIGNED,
+  TaskLogAction.COMMENTED,
 ];
 
 const MAX_NOTE_LENGTH = 1000;
@@ -56,10 +56,7 @@ async function canAccessTaskLogs(
     where: {
       id: taskId,
       isDeleted: false,
-      OR: [
-        { ownerId: userId },
-        { assignments: { some: { userId } } },
-      ],
+      OR: [{ ownerId: userId }, { assignments: { some: { userId } } }],
     },
   });
 
@@ -70,7 +67,10 @@ async function canAccessTaskLogs(
  * Validate TaskLogAction enum value
  */
 function isValidAction(action: unknown): action is TaskLogAction {
-  return typeof action === "string" && VALID_ACTIONS.includes(action as TaskLogAction);
+  return (
+    typeof action === "string" &&
+    VALID_ACTIONS.includes(action as TaskLogAction)
+  );
 }
 
 /**
@@ -156,7 +156,10 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const pageSize = Math.min(
       MAX_PAGE_SIZE,
-      Math.max(1, parseInt(searchParams.get("pageSize") || String(DEFAULT_PAGE_SIZE), 10))
+      Math.max(
+        1,
+        parseInt(searchParams.get("pageSize") || String(DEFAULT_PAGE_SIZE), 10)
+      )
     );
 
     // Authorization: Non-admins must provide taskId

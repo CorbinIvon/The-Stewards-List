@@ -66,15 +66,7 @@ export interface ModalProps {
  */
 const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
   (
-    {
-      isOpen,
-      onClose,
-      title,
-      children,
-      footer,
-      size = "md",
-      className,
-    },
+    { isOpen, onClose, title, children, footer, size = "md", className },
     ref
   ) => {
     const dialogRef = useRef<HTMLDivElement>(null);
@@ -86,6 +78,7 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
       md: "max-w-md",
       lg: "max-w-lg",
     };
+    // eslint-disable-next-line security/detect-object-injection
     const sizeClassName = sizeMap[size] || sizeMap.md;
 
     /**

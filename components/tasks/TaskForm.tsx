@@ -7,12 +7,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import {
-  Task,
-  TaskStatus,
-  TaskPriority,
-  TaskFrequency,
-} from "@/lib/types";
+import { Task, TaskStatus, TaskPriority, TaskFrequency } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Card, CardBody, CardFooter } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -228,7 +223,9 @@ export function TaskForm({
    * Handle field change
    */
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ): void => {
     const { name, value } = e.target;
     const fieldName = name as keyof TaskFormData;
@@ -239,9 +236,11 @@ export function TaskForm({
     }));
 
     // Clear error when user starts typing
+    // eslint-disable-next-line security/detect-object-injection
     if (errors[fieldName]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
+        // eslint-disable-next-line security/detect-object-injection
         delete newErrors[fieldName];
         return newErrors;
       });
@@ -252,7 +251,9 @@ export function TaskForm({
    * Handle field blur for validation
    */
   const handleBlur = (
-    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.FocusEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ): void => {
     const { name, value } = e.target;
     const fieldName = name as keyof TaskFormData;
@@ -398,7 +399,7 @@ export function TaskForm({
               label="Due Date"
               name="dueDate"
               type="date"
-              value={formData.dueDate}
+              value={formData.dueDate || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               error={touched.dueDate ? errors.dueDate : undefined}

@@ -52,7 +52,9 @@ const generateBreadcrumbs = (pathname: string): RouteConfig[] => {
   let currentPath = "/dashboard";
   segments.forEach((segment) => {
     currentPath += `/${segment}`;
-    const label = routeMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+    // eslint-disable-next-line security/detect-object-injection
+    const label =
+      routeMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
     breadcrumbs.push({ label, href: currentPath });
   });
 
@@ -64,7 +66,11 @@ const generateBreadcrumbs = (pathname: string): RouteConfig[] => {
  */
 const getRoleBadgeColor = (
   role: UserRole
-): "bg-blue-100 text-blue-800" | "bg-purple-100 text-purple-800" | "bg-green-100 text-green-800" => {
+):
+  | "bg-blue-100 text-blue-800"
+  | "bg-purple-100 text-purple-800"
+  | "bg-green-100 text-green-800"
+  | "bg-gray-100 text-gray-800" => {
   switch (role) {
     case UserRole.ADMIN:
       return "bg-blue-100 text-blue-800";
@@ -104,7 +110,7 @@ const getRoleBadgeColor = (
  * );
  * ```
  */
-export const Header = React.forwardRef<HTMLHeaderElement, HeaderProps>(
+export const Header = React.forwardRef<HTMLElement, HeaderProps>(
   ({ onMobileMenuClick, showMobileMenu = true, title }, ref) => {
     const pathname = usePathname();
     const router = useRouter();
@@ -121,7 +127,10 @@ export const Header = React.forwardRef<HTMLHeaderElement, HeaderProps>(
 
     const breadcrumbs = generateBreadcrumbs(pathname);
     const pageTitle =
-      title || (breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1]?.label : "Dashboard");
+      title ||
+      (breadcrumbs.length > 0
+        ? breadcrumbs[breadcrumbs.length - 1]?.label
+        : "Dashboard");
 
     /**
      * Handle logout with navigation
@@ -191,6 +200,7 @@ export const Header = React.forwardRef<HTMLHeaderElement, HeaderProps>(
           case " ":
             event.preventDefault();
             if (focusedItemIndex >= 0 && focusedItemIndex < itemCount) {
+              // eslint-disable-next-line security/detect-object-injection
               items[focusedItemIndex]?.click();
             }
             break;
@@ -207,6 +217,7 @@ export const Header = React.forwardRef<HTMLHeaderElement, HeaderProps>(
      */
     useEffect(() => {
       if (isDropdownOpen && focusedItemIndex >= 0) {
+        // eslint-disable-next-line security/detect-object-injection
         dropdownItemsRef.current[focusedItemIndex]?.focus();
       }
     }, [isDropdownOpen, focusedItemIndex]);
@@ -286,7 +297,10 @@ export const Header = React.forwardRef<HTMLHeaderElement, HeaderProps>(
                   <nav aria-label="Breadcrumb" className="flex items-center">
                     <ol className="flex flex-wrap items-center gap-2">
                       {breadcrumbs.map((crumb, index) => (
-                        <li key={crumb.href} className="flex items-center gap-2">
+                        <li
+                          key={crumb.href}
+                          className="flex items-center gap-2"
+                        >
                           {index > 0 && (
                             <svg
                               className="w-4 h-4 text-gray-400"

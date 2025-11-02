@@ -8,7 +8,7 @@
 
 import React, { useState, useCallback } from "react";
 import type { User } from "@/lib/types";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import { cn } from "@/lib/utils";
@@ -180,10 +180,7 @@ function validateBio(bio: string | undefined): string | undefined {
  * ```
  */
 export const ProfileForm = React.forwardRef<HTMLFormElement, ProfileFormProps>(
-  (
-    { user, onSave, isSubmitting, onCancel },
-    ref
-  ) => {
+  ({ user, onSave, isSubmitting, onCancel }, ref) => {
     // ========================================================================
     // STATE
     // ========================================================================
@@ -214,6 +211,7 @@ export const ProfileForm = React.forwardRef<HTMLFormElement, ProfileFormProps>(
         setIsDirty(true);
 
         // Clear error for this field when user starts typing
+        // eslint-disable-next-line security/detect-object-injection
         if (errors[field]) {
           setErrors((prev) => ({
             ...prev,

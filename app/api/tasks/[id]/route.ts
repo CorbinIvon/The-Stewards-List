@@ -55,10 +55,7 @@ async function canAccessTask(
     where: {
       id: taskId,
       isDeleted: false,
-      OR: [
-        { ownerId: userId },
-        { assignments: { some: { userId } } },
-      ],
+      OR: [{ ownerId: userId }, { assignments: { some: { userId } } }],
     },
   });
 
@@ -85,10 +82,7 @@ async function canModifyTask(
     where: {
       id: taskId,
       isDeleted: false,
-      OR: [
-        { ownerId: userId },
-        { assignments: { some: { userId } } },
-      ],
+      OR: [{ ownerId: userId }, { assignments: { some: { userId } } }],
     },
   });
 
@@ -142,7 +136,10 @@ function validateTaskUpdateData(data: any): {
   }
 
   if (data.priority !== undefined) {
-    if (data.priority && !["LOW", "MEDIUM", "HIGH", "URGENT"].includes(data.priority)) {
+    if (
+      data.priority &&
+      !["LOW", "MEDIUM", "HIGH", "URGENT"].includes(data.priority)
+    ) {
       errors.push("priority must be one of: LOW, MEDIUM, HIGH, URGENT");
     }
   }
@@ -161,9 +158,15 @@ function validateTaskUpdateData(data: any): {
   if (data.frequency !== undefined) {
     if (
       data.frequency !== null &&
-      !["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "ONCE"].includes(
-        data.frequency
-      )
+      ![
+        "DAILY",
+        "WEEKLY",
+        "BIWEEKLY",
+        "MONTHLY",
+        "QUARTERLY",
+        "YEARLY",
+        "ONCE",
+      ].includes(data.frequency)
     ) {
       errors.push(
         "frequency must be one of: DAILY, WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY, ONCE"
@@ -172,10 +175,7 @@ function validateTaskUpdateData(data: any): {
   }
 
   if (data.dueDate !== undefined) {
-    if (
-      data.dueDate !== null &&
-      isNaN(new Date(data.dueDate).getTime())
-    ) {
+    if (data.dueDate !== null && isNaN(new Date(data.dueDate).getTime())) {
       errors.push("dueDate must be a valid ISO date string");
     }
   }
@@ -207,7 +207,7 @@ function validateTaskUpdateData(data: any): {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
     // Require authentication
@@ -217,9 +217,11 @@ export async function GET(
     }
     const { user } = auth;
 
+    const { id } = params;
+
     // Check if task exists and is not deleted
     const task = await prisma.task.findUnique({
-      where: { id: id },
+      where: { id },
       include: taskInclude,
     });
 
@@ -303,7 +305,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
     // Require authentication
@@ -330,9 +332,11 @@ export async function PATCH(
       );
     }
 
+    const { id } = params;
+
     // Get current task
     const currentTask = await prisma.task.findUnique({
-      where: { id: id },
+      where: { id },
       select: {
         id: true,
         status: true,
@@ -392,7 +396,10 @@ export async function PATCH(
         updateData.completedAt = new Date();
       }
       // If status changes from COMPLETED to something else, clear completedAt
-      else if (body.status !== "COMPLETED" && currentTask.status === "COMPLETED") {
+      else if (
+        body.status !== "COMPLETED" &&
+        currentTask.status === "COMPLETED"
+      ) {
         updateData.completedAt = null;
       }
     }
@@ -406,7 +413,7 @@ export async function PATCH(
     // Update task and create log in transaction
     const [updatedTask] = await prisma.$transaction([
       prisma.task.update({
-        where: { id: id },
+        where: { id },
         data: updateData,
         include: taskInclude,
       }),
@@ -466,7 +473,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
     // Require authentication
@@ -476,9 +483,11 @@ export async function DELETE(
     }
     const { user } = auth;
 
+    const { id } = params;
+
     // Get current task
     const currentTask = await prisma.task.findUnique({
-      where: { id: id },
+      where: { id },
       select: {
         id: true,
         ownerId: true,
@@ -513,7 +522,7 @@ export async function DELETE(
     // Soft delete task and create log in transaction
     await prisma.$transaction([
       prisma.task.update({
-        where: { id: id },
+        where: { id },
         data: {
           isDeleted: true,
           deletedAt: new Date(),

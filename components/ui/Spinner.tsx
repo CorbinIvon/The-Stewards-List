@@ -28,7 +28,9 @@ export function Spinner({
       aria-label="Loading"
       className={cn(
         "inline-block rounded-full border-4 border-transparent animate-spin",
+        // eslint-disable-next-line security/detect-object-injection
         sizeClasses[size],
+        // eslint-disable-next-line security/detect-object-injection
         colorClasses[color],
         className
       )}

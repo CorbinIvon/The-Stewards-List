@@ -17,11 +17,20 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { apiClient, ApiClientError } from "@/lib/api-client";
-import type { TaskWithOwner, TaskStatus, TaskPriority, UserRole } from "@/lib/types";
-import { TaskStatus as TaskStatusEnum, TaskPriority as TaskPriorityEnum, UserRole as UserRoleEnum } from "@/lib/types";
+import type {
+  TaskWithOwner,
+  TaskStatus,
+  TaskPriority,
+  UserRole,
+} from "@/lib/types";
+import {
+  TaskStatus as TaskStatusEnum,
+  TaskPriority as TaskPriorityEnum,
+  UserRole as UserRoleEnum,
+} from "@/lib/types";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
 import { Card, CardHeader, CardTitle, CardBody } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
@@ -108,46 +117,62 @@ interface TaskCardProps {
  */
 function TaskCard({ task, onClick }: TaskCardProps): React.ReactElement {
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="truncate">{task.title}</CardTitle>
-            <p className="text-sm text-gray-500 mt-1">
-              by {task.owner.displayName || task.owner.username || task.owner.email}
+    <div
+      className="cursor-pointer"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+    >
+      <Card className="hover:shadow-md transition-shadow">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="truncate">{task.title}</CardTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                by{" "}
+                {task.owner.displayName ||
+                  task.owner.username ||
+                  task.owner.email}
+              </p>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <Badge variant={getStatusBadgeVariant(task.status)} size="sm">
+                {toTitleCase(task.status.toLowerCase())}
+              </Badge>
+              <Badge variant={getPriorityBadgeVariant(task.priority)} size="sm">
+                {toTitleCase(task.priority.toLowerCase())}
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardBody>
+          {task.description && (
+            <p className="text-sm text-gray-600 mb-3">
+              {truncateAtWord(task.description, 100)}
             </p>
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <Badge variant={getStatusBadgeVariant(task.status)} size="sm">
-              {toTitleCase(task.status.toLowerCase())}
-            </Badge>
-            <Badge variant={getPriorityBadgeVariant(task.priority)} size="sm">
-              {toTitleCase(task.priority.toLowerCase())}
-            </Badge>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardBody>
-        {task.description && (
-          <p className="text-sm text-gray-600 mb-3">
-            {truncateAtWord(task.description, 100)}
-          </p>
-        )}
-
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          {task.dueDate ? (
-            <span>Due: {formatDate(task.dueDate)}</span>
-          ) : (
-            <span>No due date</span>
           )}
 
-          {task.completedAt && (
-            <span>Completed: {formatDate(task.completedAt)}</span>
-          )}
-        </div>
-      </CardBody>
-    </Card>
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            {task.dueDate ? (
+              <span>Due: {formatDate(task.dueDate)}</span>
+            ) : (
+              <span>No due date</span>
+            )}
+
+            {task.completedAt && (
+              <span>Completed: {formatDate(task.completedAt)}</span>
+            )}
+          </div>
+        </CardBody>
+      </Card>
+    </div>
   );
 }
 
@@ -163,7 +188,10 @@ interface TaskFiltersProps {
 /**
  * Task filter controls component
  */
-function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps): React.ReactElement {
+function TaskFilters({
+  filters,
+  onFiltersChange,
+}: TaskFiltersProps): React.ReactElement {
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onFiltersChange({
@@ -304,8 +332,8 @@ export default function TasksPage(): React.ReactElement {
         err instanceof ApiClientError
           ? err.message
           : err instanceof Error
-            ? err.message
-            : "Failed to load tasks";
+          ? err.message
+          : "Failed to load tasks";
 
       setState((prev) => ({
         ...prev,
@@ -461,11 +489,13 @@ export default function TasksPage(): React.ReactElement {
                 <Button
                   variant="secondary"
                   size="md"
-                  onClick={() => handleFiltersChange({
-                    status: "",
-                    priority: "",
-                    search: "",
-                  })}
+                  onClick={() =>
+                    handleFiltersChange({
+                      status: "",
+                      priority: "",
+                      search: "",
+                    })
+                  }
                   className="mt-2"
                 >
                   Clear Filters

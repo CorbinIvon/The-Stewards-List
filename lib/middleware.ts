@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 /**
  * CORS Configuration
@@ -7,9 +7,9 @@ import { z } from 'zod';
  * Update ALLOWED_ORIGINS based on your deployment environment
  */
 const ALLOWED_ORIGINS = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://127.0.0.1:3000',
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
   process.env.NEXT_PUBLIC_APP_URL,
 ].filter(Boolean) as string[];
 
@@ -17,19 +17,19 @@ const ALLOWED_ORIGINS = [
  * Security headers that should be applied to all responses
  */
 const SECURITY_HEADERS: Record<string, string> = {
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "X-XSS-Protection": "1; mode=block",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
 };
 
 /**
  * List of paths that should skip validation
  * Useful for public endpoints or health checks
  */
-const VALIDATION_SKIP_PATHS = ['/api/health', '/api/status'];
+const VALIDATION_SKIP_PATHS = ["/api/health", "/api/status"];
 
 /**
  * Logging configuration
@@ -52,9 +52,10 @@ interface LogContext {
  * @param context - Logging context
  */
 function logRequest(context: LogContext): void {
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isDevelopment = process.env.NODE_ENV === "development";
 
   if (isDevelopment) {
+    // eslint-disable-next-line no-console
     console.log(JSON.stringify(context, null, 2));
   } else {
     // In production, send to external logging service
@@ -72,11 +73,14 @@ function logRequest(context: LogContext): void {
  * @param response - NextResponse to modify
  * @returns Updated response with CORS headers, or error response if origin not allowed
  */
-export function corsMiddleware(request: NextRequest, response: NextResponse): NextResponse {
-  const origin = request.headers.get('origin');
+export function corsMiddleware(
+  request: NextRequest,
+  response: NextResponse
+): NextResponse {
+  const origin = request.headers.get("origin");
 
   // Handle preflight requests
-  if (request.method === 'OPTIONS') {
+  if (request.method === "OPTIONS") {
     if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
       return new NextResponse(null, { status: 403 });
     }
@@ -84,19 +88,25 @@ export function corsMiddleware(request: NextRequest, response: NextResponse): Ne
     return new NextResponse(null, {
       status: 200,
       headers: {
-        'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Max-Age': '86400',
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Max-Age": "86400",
       },
     });
   }
 
   // Add CORS headers to actual requests
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    response.headers.set('Access-Control-Allow-Origin', origin);
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
   }
 
   return response;
@@ -109,7 +119,9 @@ export function corsMiddleware(request: NextRequest, response: NextResponse): Ne
  * @param response - NextResponse to modify
  * @returns Updated response with security headers
  */
-export function securityHeadersMiddleware(response: NextResponse): NextResponse {
+export function securityHeadersMiddleware(
+  response: NextResponse
+): NextResponse {
   Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
@@ -179,14 +191,16 @@ export function requestLoggingMiddleware(request: NextRequest): () => void {
  * @param request - NextRequest object
  * @returns true if request should be allowed, false if rate limited
  */
-export async function rateLimitMiddleware(request: NextRequest): Promise<boolean> {
+export async function rateLimitMiddleware(
+  request: NextRequest
+): Promise<boolean> {
   // TODO: Implement Redis-backed rate limiting
   // For now, this is a placeholder that always allows requests
 
   const redisUrl = process.env.REDIS_URL;
 
   if (!redisUrl) {
-    console.warn('REDIS_URL not configured - rate limiting disabled');
+    console.warn("REDIS_URL not configured - rate limiting disabled");
     return true;
   }
 
@@ -202,7 +216,9 @@ export async function rateLimitMiddleware(request: NextRequest): Promise<boolean
  * @param request - NextRequest object
  * @returns NextResponse if validation fails, undefined if validation passes
  */
-export function requestValidationMiddleware(request: NextRequest): NextResponse | undefined {
+export function requestValidationMiddleware(
+  request: NextRequest
+): NextResponse | undefined {
   const method = request.method;
   const path = request.nextUrl.pathname;
 
@@ -212,14 +228,15 @@ export function requestValidationMiddleware(request: NextRequest): NextResponse 
   }
 
   // Validate methods that require body
-  if (['POST', 'PUT', 'PATCH'].includes(method)) {
-    const contentType = request.headers.get('content-type');
+  if (["POST", "PUT", "PATCH"].includes(method)) {
+    const contentType = request.headers.get("content-type");
 
-    if (!contentType?.includes('application/json')) {
+    if (!contentType?.includes("application/json")) {
       return NextResponse.json(
         {
-          error: 'Invalid Content-Type',
-          message: 'Content-Type must be application/json for POST, PUT, and PATCH requests',
+          error: "Invalid Content-Type",
+          message:
+            "Content-Type must be application/json for POST, PUT, and PATCH requests",
         },
         { status: 400 }
       );
@@ -236,9 +253,9 @@ export function requestValidationMiddleware(request: NextRequest): NextResponse 
  * @param handler - The API route handler function
  * @returns Wrapped handler with error handling
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<NextResponse>>(
-  handler: T
-): T {
+export function withErrorHandling<
+  T extends (...args: any[]) => Promise<NextResponse>
+>(handler: T): T {
   return (async (...args: any[]) => {
     const request = args[0] as NextRequest;
     const timestamp = new Date().toISOString();
@@ -254,7 +271,7 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<NextResp
           method,
           path,
           status: 400,
-          error: 'Request validation failed',
+          error: "Request validation failed",
         });
         return validationError;
       }
@@ -267,12 +284,12 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<NextResp
           method,
           path,
           status: 429,
-          error: 'Rate limit exceeded',
+          error: "Rate limit exceeded",
         });
         return NextResponse.json(
           {
-            error: 'Too Many Requests',
-            message: 'Rate limit exceeded. Please try again later.',
+            error: "Too Many Requests",
+            message: "Rate limit exceeded. Please try again later.",
           },
           { status: 429 }
         );
@@ -300,8 +317,9 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<NextResp
 
       return response;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const isDevelopment = process.env.NODE_ENV === 'development';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      const isDevelopment = process.env.NODE_ENV === "development";
 
       // Log error
       logRequest({
@@ -315,9 +333,13 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<NextResp
       // Return error response
       return NextResponse.json(
         {
-          error: 'Internal Server Error',
-          message: isDevelopment ? errorMessage : 'An unexpected error occurred',
-          ...(isDevelopment && { stack: error instanceof Error ? error.stack : undefined }),
+          error: "Internal Server Error",
+          message: isDevelopment
+            ? errorMessage
+            : "An unexpected error occurred",
+          ...(isDevelopment && {
+            stack: error instanceof Error ? error.stack : undefined,
+          }),
         },
         { status: 500 }
       );
@@ -333,8 +355,12 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<NextResp
  * @param handler - The API route handler
  * @returns Wrapped handler with all middleware applied
  */
-export function withMiddleware<T extends (...args: any[]) => Promise<NextResponse>>(
-  middlewares: Array<(request: NextRequest) => NextResponse | undefined | Promise<boolean>>,
+export function withMiddleware<
+  T extends (...args: any[]) => Promise<NextResponse>
+>(
+  middlewares: Array<
+    (request: NextRequest) => NextResponse | undefined | Promise<boolean>
+  >,
   handler: T
 ): T {
   return (async (...args: any[]) => {
@@ -353,8 +379,8 @@ export function withMiddleware<T extends (...args: any[]) => Promise<NextRespons
       if (result === false) {
         return NextResponse.json(
           {
-            error: 'Request denied',
-            message: 'Your request was denied by middleware',
+            error: "Request denied",
+            message: "Your request was denied by middleware",
           },
           { status: 403 }
         );
@@ -373,8 +399,8 @@ export function withMiddleware<T extends (...args: any[]) => Promise<NextRespons
  * @param handler - The API route handler
  * @returns Handler wrapped with error handling and security
  */
-export function withApiProtection<T extends (...args: any[]) => Promise<NextResponse>>(
-  handler: T
-): T {
+export function withApiProtection<
+  T extends (...args: any[]) => Promise<NextResponse>
+>(handler: T): T {
   return withErrorHandling(handler);
 }

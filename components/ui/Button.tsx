@@ -24,6 +24,7 @@ const Spinner = ({ size }: { size: "sm" | "md" | "lg" }) => {
 
   return (
     <svg
+      // eslint-disable-next-line security/detect-object-injection
       className={cn("animate-spin", sizeClasses[size])}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
@@ -93,20 +94,16 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={loading}
         className={cn(
           baseClasses,
+          // eslint-disable-next-line security/detect-object-injection
           sizeClasses[size],
+          // eslint-disable-next-line security/detect-object-injection
           variantClasses[variant],
           className
         )}
         {...props}
       >
-        {loading && (
-          <Spinner size={size} />
-        )}
-        {loading ? (
-          <span className="ml-2">{children}</span>
-        ) : (
-          children
-        )}
+        {loading && <Spinner size={size} />}
+        {loading ? <span className="ml-2">{children}</span> : children}
       </button>
     );
   }

@@ -116,6 +116,7 @@ function base64UrlEncodeInput(
     // browser / edge
     let binary = "";
     for (let i = 0; i < bytes.length; i++) {
+      // eslint-disable-next-line security/detect-object-injection
       binary += String.fromCharCode(bytes[i]);
     }
     b64 = btoa(binary);
@@ -139,6 +140,7 @@ function base64UrlDecodeToString(str: string): string {
     const binary = atob(padded);
     // convert binary to string
     let result = "";
+    // eslint-disable-next-line security/detect-object-injection
     for (let i = 0; i < binary.length; i++) result += binary[i];
     return result;
   }

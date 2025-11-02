@@ -45,7 +45,9 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       info: "bg-blue-100 text-blue-800",
     };
 
+    // eslint-disable-next-line security/detect-object-injection
     const sizeClassName = sizeMap[size] || sizeMap.md;
+    // eslint-disable-next-line security/detect-object-injection
     const variantClassName = variantMap[variant] || variantMap.default;
 
     return (

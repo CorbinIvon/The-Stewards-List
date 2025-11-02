@@ -227,8 +227,8 @@ function canDeletePermission(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse<ApiResponse<any>>> {
+  { params }: { params: { id: string } }
+): Promise<NextResponse> {
   try {
     // Extract and verify authentication
     const authUser = extractAuthUser(request);
@@ -243,9 +243,11 @@ export async function GET(
       );
     }
 
+    const { id } = params;
+
     // Fetch permission with includes
     const permission = await prisma.permission.findUnique({
-      where: { id: id },
+      where: { id },
       include: permissionInclude,
     });
 
@@ -317,8 +319,8 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse<ApiResponse<any>>> {
+  { params }: { params: { id: string } }
+): Promise<NextResponse> {
   try {
     // Extract and verify authentication
     const authUser = extractAuthUser(request);
@@ -380,16 +382,19 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid permission type. Must be READ, WRITE, DELETE, or ADMIN",
+          error:
+            "Invalid permission type. Must be READ, WRITE, DELETE, or ADMIN",
           timestamp: new Date().toISOString(),
         },
         { status: 400 }
       );
     }
 
+    const { id } = params;
+
     // Fetch existing permission
     const existingPermission = await prisma.permission.findUnique({
-      where: { id: id },
+      where: { id },
       include: permissionInclude,
     });
 
@@ -423,7 +428,7 @@ export async function PATCH(
 
     // Update permission
     const updated = await prisma.permission.update({
-      where: { id: id },
+      where: { id },
       data: { permission },
       include: permissionInclude,
     });
@@ -468,8 +473,8 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse<ApiResponse<any>>> {
+  { params }: { params: { id: string } }
+): Promise<NextResponse> {
   try {
     // Extract and verify authentication
     const authUser = extractAuthUser(request);
@@ -484,9 +489,11 @@ export async function DELETE(
       );
     }
 
+    const { id } = params;
+
     // Fetch permission
     const permission = await prisma.permission.findUnique({
-      where: { id: id },
+      where: { id },
       include: permissionInclude,
     });
 
@@ -520,7 +527,7 @@ export async function DELETE(
 
     // Delete permission (hard delete)
     await prisma.permission.delete({
-      where: { id: id },
+      where: { id },
     });
 
     // Return success response

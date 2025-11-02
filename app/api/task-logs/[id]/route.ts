@@ -71,10 +71,7 @@ async function canAccessTaskLog(
     where: {
       id: taskLog.task.id,
       isDeleted: false,
-      OR: [
-        { ownerId: userId },
-        { assignments: { some: { userId } } },
-      ],
+      OR: [{ ownerId: userId }, { assignments: { some: { userId } } }],
     },
   });
 
@@ -101,7 +98,7 @@ async function canAccessTaskLog(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
     // Authenticate user
@@ -110,6 +107,8 @@ export async function GET(
       return auth;
     }
     const { user } = auth;
+
+    const { id } = params;
 
     // Validate ID parameter
     if (!id || !id.trim()) {
@@ -147,7 +146,8 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          error: "Access denied. You do not have permission to view this task log.",
+          error:
+            "Access denied. You do not have permission to view this task log.",
           timestamp: new Date().toISOString(),
         },
         { status: 403 }
