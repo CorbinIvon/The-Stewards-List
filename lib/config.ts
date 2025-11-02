@@ -100,8 +100,6 @@ export const config = {
 if (process.env.NODE_ENV !== "production" || process.env.VERCEL !== "1") {
   try {
     validateEnv();
-    // eslint-disable-next-line no-console
-    console.log("✅ Environment configuration validated");
   } catch (error) {
     if (!process.env.SKIP_ENV_VALIDATION) {
       process.exit(1);
