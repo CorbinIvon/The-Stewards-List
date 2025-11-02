@@ -36,7 +36,7 @@ async function main() {
         ownerId: user.id,
         title: 'Test Task',
         description: 'This is a test task',
-        frequency: 'daily',
+        frequency: 'DAILY',
       },
     });
     console.log('✓ Task created:', {
@@ -51,7 +51,7 @@ async function main() {
       data: {
         userId: user.id,
         taskId: task.id,
-        permission: 'read',
+        permission: 'READ',
       },
     });
     console.log('✓ Permission created:', {
@@ -65,6 +65,7 @@ async function main() {
       data: {
         taskId: task.id,
         userId: user.id,
+        action: 'CREATED',
       },
     });
     console.log('✓ Task log created:', {
