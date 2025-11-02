@@ -166,11 +166,18 @@ const IconClose = () => (
 // SIDEBAR COMPONENT
 // ============================================================================
 
-export function Sidebar(): React.ReactElement {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({
+  isOpen = false,
+  onClose,
+}: SidebarProps): React.ReactElement {
   const user = useAuthUser();
   const pathname = usePathname();
   const logout = useLogout();
-  const [isOpen, setIsOpen] = useState(false);
 
   /**
    * Menu items with role-based visibility
@@ -250,7 +257,7 @@ export function Sidebar(): React.ReactElement {
   const handleLogout = async (): Promise<void> => {
     try {
       await logout();
-      setIsOpen(false);
+      closeSidebar();
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -260,21 +267,11 @@ export function Sidebar(): React.ReactElement {
    * Close sidebar on mobile
    */
   const closeSidebar = (): void => {
-    setIsOpen(false);
+    onClose?.();
   };
 
   return (
     <>
-      {/* Mobile menu button - hidden on desktop */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-40 p-2 rounded-lg lg:hidden bg-slate-800 text-white hover:bg-slate-700 transition-colors"
-        aria-label="Toggle navigation menu"
-        aria-expanded={isOpen}
-      >
-        {isOpen ? <IconClose /> : <IconMenu />}
-      </button>
-
       {/* Mobile sidebar overlay - only visible on mobile when open */}
       {isOpen && (
         <div
@@ -286,7 +283,7 @@ export function Sidebar(): React.ReactElement {
 
       {/* Sidebar container */}
       <aside
-        className={`fixed left-0 top-0 h-screen w-64 bg-slate-900 text-white shadow-lg z-40 transform transition-transform duration-300 ease-in-out flex flex-col lg:relative lg:translate-x-0 ${
+        className={`fixed left-0 top-0 h-screen w-64 bg-slate-900 text-white shadow-lg z-40 transform transition-transform duration-300 ease-in-out flex flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         role="navigation"
@@ -296,9 +293,7 @@ export function Sidebar(): React.ReactElement {
         <div className="p-6 border-b border-slate-700">
           <h1 className="text-2xl font-bold text-white">The Stewards List</h1>
           {user && (
-            <p className="text-sm text-slate-400 mt-1">
-              {user.username}
-            </p>
+            <p className="text-sm text-slate-400 mt-1">{user.username}</p>
           )}
         </div>
 

@@ -6,7 +6,12 @@ import {
   createAuthUserFromUser,
   TOKEN_EXPIRY,
 } from "@/lib/auth";
-import type { SignupRequest, SignupResponse, ApiResponse } from "@/lib/types";
+import type {
+  SignupRequest,
+  SignupResponse,
+  ApiResponse,
+  User,
+} from "@/lib/types";
 import { UserRole } from "@/lib/types";
 
 /**
@@ -151,16 +156,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Create user in database
     let user;
     try {
-      user = await prisma.user.create({
+      // Check if this is the first user (make them admin)
+      const userCount = await prisma.user.count();
+      const isFirstUser = userCount === 0;
+
+      user = (await prisma.user.create({
         data: {
           email: email.toLowerCase(),
           username: username.toLowerCase(),
           displayName,
           passwordHash: hashedPassword,
-          role: UserRole.MEMBER,
-          isActive: true,
+          ...(isFirstUser && { role: UserRole.ADMIN }),
         },
-      });
+      })) as User;
     } catch (error: unknown) {
       // Check for Prisma unique constraint errors
       if (error instanceof Error && "code" in error && error.code === "P2002") {

@@ -3,7 +3,7 @@
 /**
  * User Detail/Edit Page
  * Allows Admin/Manager users to view and edit user information
- * Located at: /dashboard/users/[id]
+ * Located at: /users/[id]
  *
  * Features:
  * - Display user information (name, email, role, status, created date, last login)
@@ -240,7 +240,7 @@ export default function UserDetailPage({
 
   // Unwrap params promise
   useEffect(() => {
-    params.then(p => setUserId(p.id));
+    params.then((p) => setUserId(p.id));
   }, [params]);
   const { user: currentUser } = useAuth();
 
@@ -267,13 +267,9 @@ export default function UserDetailPage({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const canEdit =
-    currentUser && canEditUser(pageState.user, currentUser)
-      ? true
-      : false;
+    currentUser && canEditUser(pageState.user, currentUser) ? true : false;
   const canDelete =
-    currentUser && canDeleteUser(pageState.user, currentUser)
-      ? true
-      : false;
+    currentUser && canDeleteUser(pageState.user, currentUser) ? true : false;
 
   // =========================================================================
   // DATA FETCHING
@@ -325,10 +321,10 @@ export default function UserDetailPage({
           statusCode === 404
             ? "User not found"
             : err instanceof ApiClientError
-              ? err.message
-              : err instanceof Error
-                ? err.message
-                : "Failed to load user";
+            ? err.message
+            : err instanceof Error
+            ? err.message
+            : "Failed to load user";
 
         if (statusCode === 404) {
           setPageState((prev) => ({
@@ -379,7 +375,11 @@ export default function UserDetailPage({
       // Validate role change
       if (
         currentUser &&
-        !canChangeRole(currentUser.role, value as UserRole, pageState.user?.role || "MEMBER")
+        !canChangeRole(
+          currentUser.role,
+          value as UserRole,
+          pageState.user?.role || "MEMBER"
+        )
       ) {
         setPageState((prev) => ({
           ...prev,
@@ -465,8 +465,8 @@ export default function UserDetailPage({
         err instanceof ApiClientError
           ? err.message
           : err instanceof Error
-            ? err.message
-            : "Failed to update user";
+          ? err.message
+          : "Failed to update user";
 
       setPageState((prev) => ({
         ...prev,
@@ -499,15 +499,15 @@ export default function UserDetailPage({
 
       // Redirect to users list after short delay
       setTimeout(() => {
-        router.push("/dashboard/users");
+        router.push("/users");
       }, 1500);
     } catch (err) {
       const errorMessage =
         err instanceof ApiClientError
           ? err.message
           : err instanceof Error
-            ? err.message
-            : "Failed to delete user";
+          ? err.message
+          : "Failed to delete user";
 
       setPageState((prev) => ({
         ...prev,
@@ -544,7 +544,7 @@ export default function UserDetailPage({
             Dashboard
           </Link>
           <span>/</span>
-          <Link href="/dashboard/users" className="hover:text-blue-600">
+          <Link href="/users" className="hover:text-blue-600">
             Users
           </Link>
           <span>/</span>
@@ -559,7 +559,7 @@ export default function UserDetailPage({
             <p className="text-gray-600 mb-6">
               The user you are looking for does not exist or has been deleted.
             </p>
-            <Link href="/dashboard/users">
+            <Link href="/users">
               <Button>Back to Users</Button>
             </Link>
           </CardBody>
@@ -577,7 +577,7 @@ export default function UserDetailPage({
             Dashboard
           </Link>
           <span>/</span>
-          <Link href="/dashboard/users" className="hover:text-blue-600">
+          <Link href="/users" className="hover:text-blue-600">
             Users
           </Link>
           <span>/</span>
@@ -593,7 +593,7 @@ export default function UserDetailPage({
               You do not have permission to edit this user. Only Admin users and
               Managers (for non-admin users) can edit user information.
             </p>
-            <Link href="/dashboard/users">
+            <Link href="/users">
               <Button>Back to Users</Button>
             </Link>
           </CardBody>
@@ -614,7 +614,7 @@ export default function UserDetailPage({
           Dashboard
         </Link>
         <span>/</span>
-        <Link href="/dashboard/users" className="hover:text-blue-600">
+        <Link href="/users" className="hover:text-blue-600">
           Users
         </Link>
         <span>/</span>
@@ -672,9 +672,7 @@ export default function UserDetailPage({
                 <Badge variant={getRoleBadgeVariant(pageState.user.role)}>
                   {toTitleCase(pageState.user.role.toLowerCase())}
                 </Badge>
-                <Badge
-                  variant={getStatusBadgeVariant(pageState.user.isActive)}
-                >
+                <Badge variant={getStatusBadgeVariant(pageState.user.isActive)}>
                   {pageState.user.isActive ? "Active" : "Inactive"}
                 </Badge>
               </div>
@@ -761,7 +759,7 @@ export default function UserDetailPage({
                 {pageState.isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
 
-              <Link href="/dashboard/users">
+              <Link href="/users">
                 <Button
                   type="button"
                   variant="secondary"

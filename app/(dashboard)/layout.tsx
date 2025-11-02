@@ -6,7 +6,7 @@
  * Manages authentication checks, loading states, and layout structure with sidebar and header
  */
 
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useIsAuthenticated, useAuthLoading } from "@/lib/auth-context";
 import { Spinner } from "@/components/ui";
@@ -42,6 +42,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const isAuthenticated = useIsAuthenticated();
   const isAuthLoading = useAuthLoading();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Show full-screen loading state while checking authentication
   if (isAuthLoading) {
@@ -68,17 +69,19 @@ export default function DashboardLayout({
   // Render authenticated dashboard layout
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - responsive positioning */}
-      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:left-0 lg:z-50">
-        <Sidebar />
-      </div>
-
-      {/* Sidebar overlay and mobile menu handled by Sidebar component */}
+      {/* Sidebar - controlled state for mobile */}
+      <Sidebar
+        isOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
+      />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col lg:ml-64 w-full">
         {/* Header */}
-        <Header showMobileMenu={true} />
+        <Header
+          showMobileMenu={true}
+          onMobileMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        />
 
         {/* Page content */}
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">

@@ -417,7 +417,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
 
                   {/* Profile link */}
                   <Link
-                    href="/dashboard/profile"
+                    href="/profile"
                     ref={(el) => {
                       if (el) dropdownItemsRef.current[0] = el;
                     }}
@@ -431,7 +431,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
 
                   {/* Settings link */}
                   <Link
-                    href="/dashboard/settings"
+                    href="/settings"
                     ref={(el) => {
                       if (el) dropdownItemsRef.current[1] = el;
                     }}

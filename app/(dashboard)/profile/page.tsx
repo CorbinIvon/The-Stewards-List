@@ -3,7 +3,7 @@
 /**
  * User Profile Page
  * Displays and allows editing of the current authenticated user's profile
- * Located at: /dashboard/profile
+ * Located at: /profile
  *
  * Features:
  * - Display current user profile information
@@ -176,8 +176,8 @@ export default function ProfilePage(): React.ReactElement {
           err instanceof ApiClientError
             ? err.message
             : err instanceof Error
-              ? err.message
-              : "Failed to load profile";
+            ? err.message
+            : "Failed to load profile";
 
         setPageState((prev) => ({
           ...prev,
@@ -201,9 +201,7 @@ export default function ProfilePage(): React.ReactElement {
   /**
    * Handle form input changes
    */
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ): void => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
 
     setFormData((prev) => ({
@@ -280,8 +278,8 @@ export default function ProfilePage(): React.ReactElement {
         err instanceof ApiClientError
           ? err.message
           : err instanceof Error
-            ? err.message
-            : "Failed to update profile";
+          ? err.message
+          : "Failed to update profile";
 
       setPageState((prev) => ({
         ...prev,
@@ -400,9 +398,7 @@ export default function ProfilePage(): React.ReactElement {
               {/* Role and Status Badges */}
               <div className="flex gap-2">
                 <UserRoleBadge role={pageState.user.role} />
-                <Badge
-                  variant={getStatusBadgeVariant(pageState.user.isActive)}
-                >
+                <Badge variant={getStatusBadgeVariant(pageState.user.isActive)}>
                   {pageState.user.isActive ? "Active" : "Inactive"}
                 </Badge>
               </div>
