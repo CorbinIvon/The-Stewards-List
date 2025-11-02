@@ -113,6 +113,16 @@ class ApiClient {
       TOKEN_STORAGE_KEY,
       JSON.stringify({ token, expiresAt })
     );
+    // Also set a cookie so server-side middleware can read authentication
+    // information on first request (middleware can't access localStorage).
+    try {
+      const expires = new Date(Date.now() + expiresIn * 1000).toUTCString();
+      // Use a reasonably safe cookie policy; adjust SameSite/Secure as needed
+      document.cookie = `authToken=${token}; Expires=${expires}; Path=/; SameSite=Lax`;
+    } catch (e) {
+      // Ignore cookie set errors in environments that restrict document.cookie
+      // (e.g. some test harnesses)
+    }
   }
 
   /**
@@ -124,6 +134,12 @@ class ApiClient {
     this.token = null;
     this.tokenExpiryTime = null;
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    try {
+      // Clear the auth cookie so server-side middleware won't see stale tokens
+      document.cookie = `authToken=; Max-Age=0; Path=/; SameSite=Lax`;
+    } catch (e) {
+      // Ignore
+    }
   }
 
   /**
@@ -179,7 +195,17 @@ class ApiClient {
         if (response.status === 401) {
           this.clearToken();
           if (typeof window !== "undefined") {
-            window.location.href = "/login";
+            // Avoid redirecting to /login when already on a public/auth page
+            const PUBLIC_CLIENT_PATHS = ["/", "/login", "/signup"];
+            try {
+              const currentPath = window.location.pathname;
+              if (!PUBLIC_CLIENT_PATHS.includes(currentPath)) {
+                window.location.href = "/login";
+              }
+            } catch (e) {
+              // If access to window.location fails for any reason, do a safe redirect
+              window.location.href = "/login";
+            }
           }
         }
 
@@ -313,9 +339,7 @@ class ApiClient {
    * Get current authenticated user
    */
   async getCurrentUser(): Promise<UserPublic> {
-    const response = await this.get<ApiResponse<UserPublic>>(
-      "/api/auth/me"
-    );
+    const response = await this.get<ApiResponse<UserPublic>>("/api/auth/me");
     return response.data;
   }
 
@@ -405,10 +429,7 @@ class ApiClient {
    * Create a new task
    */
   async createTask(request: CreateTaskRequest): Promise<Task> {
-    const response = await this.post<ApiResponse<Task>>(
-      "/api/tasks",
-      request
-    );
+    const response = await this.post<ApiResponse<Task>>("/api/tasks", request);
     return response.data;
   }
 
@@ -433,7 +454,10 @@ class ApiClient {
   /**
    * Assign task to user
    */
-  async assignTask(taskId: string, request: AssignTaskRequest): Promise<TaskAssignment> {
+  async assignTask(
+    taskId: string,
+    request: AssignTaskRequest
+  ): Promise<TaskAssignment> {
     const response = await this.post<ApiResponse<TaskAssignment>>(
       `/api/tasks/${taskId}/assign`,
       request
@@ -444,7 +468,10 @@ class ApiClient {
   /**
    * Unassign task from user
    */
-  async unassignTask(taskId: string, request: UnassignTaskRequest): Promise<void> {
+  async unassignTask(
+    taskId: string,
+    request: UnassignTaskRequest
+  ): Promise<void> {
     await this.post(`/api/tasks/${taskId}/unassign`, request);
   }
 
@@ -564,10 +591,7 @@ class ApiClient {
    * Create chat message
    */
   async createChat(request: CreateChatRequest): Promise<Chat> {
-    const response = await this.post<ApiResponse<Chat>>(
-      "/api/chats",
-      request
-    );
+    const response = await this.post<ApiResponse<Chat>>("/api/chats", request);
     return response.data;
   }
 

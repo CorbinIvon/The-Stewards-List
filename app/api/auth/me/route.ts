@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import {
-  extractTokenFromHeader,
-  verifyToken,
-} from "@/lib/auth";
+import { extractTokenFromHeader, verifyToken } from "@/lib/auth";
 import type { UserPublic, ApiResponse } from "@/lib/types";
 
 /**
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Verify and decode token
     let authUser;
     try {
-      authUser = verifyToken(token);
+      authUser = await verifyToken(token);
     } catch (error) {
       console.error("Token verification error:", error);
       return NextResponse.json(
@@ -47,20 +44,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Fetch fresh user data from database
     let user;
     try {
-      user = await prisma.user.findUnique({
-        where: { id: authUser.id },
-        select: {
-          id: true,
-          createdAt: true,
-          updatedAt: true,
-          email: true,
-          username: true,
-          displayName: true,
-          role: true,
-          isActive: true,
-          lastLoginAt: true,
-        },
-      });
+      // Fetch full user record; we'll strip sensitive fields before returning.
+      user = await prisma.user.findUnique({ where: { id: authUser.id } });
     } catch (error) {
       console.error("Database error fetching user:", error);
       return NextResponse.json(
@@ -86,7 +71,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Check if user is inactive
-    if (!user.isActive) {
+    if (!(user as any).isActive) {
       return NextResponse.json(
         {
           success: false,
@@ -98,9 +83,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Return user data (without passwordHash)
+    // Prisma may include passwordHash; remove it explicitly before returning.
+    const { passwordHash, ...userSafe } = user as any;
     const response: ApiResponse<UserPublic> = {
       success: true,
-      data: user as UserPublic,
+      data: userSafe as UserPublic,
       timestamp: new Date().toISOString(),
     };
 

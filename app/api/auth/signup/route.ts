@@ -40,9 +40,10 @@ const VALIDATION_RULES = {
 /**
  * Validate signup request data
  */
-function validateSignupRequest(
-  data: unknown
-): { valid: boolean; errors?: Record<string, string> } {
+function validateSignupRequest(data: unknown): {
+  valid: boolean;
+  errors?: Record<string, string>;
+} {
   const errors: Record<string, string> = {};
 
   if (typeof data !== "object" || data === null) {
@@ -74,9 +75,7 @@ function validateSignupRequest(
     errors.displayName = "Display name is required";
   } else if (req.displayName.length < VALIDATION_RULES.displayName.minLength) {
     errors.displayName = `Display name must be at least ${VALIDATION_RULES.displayName.minLength} characters`;
-  } else if (
-    req.displayName.length > VALIDATION_RULES.displayName.maxLength
-  ) {
+  } else if (req.displayName.length > VALIDATION_RULES.displayName.maxLength) {
     errors.displayName = `Display name must be at most ${VALIDATION_RULES.displayName.maxLength} characters`;
   }
 
@@ -164,11 +163,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     } catch (error: unknown) {
       // Check for Prisma unique constraint errors
-      if (
-        error instanceof Error &&
-        "code" in error &&
-        error.code === "P2002"
-      ) {
+      if (error instanceof Error && "code" in error && error.code === "P2002") {
         const prismaError = error as { meta?: { target?: string[] } };
         const target = prismaError.meta?.target?.[0];
 
@@ -210,7 +205,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let token: string;
     try {
       const authUser = createAuthUserFromUser(user);
-      token = generateToken(authUser, TOKEN_EXPIRY);
+      token = await generateToken(authUser, TOKEN_EXPIRY);
     } catch (error) {
       console.error("Token generation error:", error);
       return NextResponse.json(
@@ -235,7 +230,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json(response, { status: 201 });
+    // Set HttpOnly cookie so middleware/server can read token securely
+    const cookieVal =
+      `authToken=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${TOKEN_EXPIRY}` +
+      (process.env.NODE_ENV === "production" ? "; Secure" : "");
+
+    return NextResponse.json(response, {
+      status: 201,
+      headers: { "Set-Cookie": cookieVal },
+    });
   } catch (error) {
     console.error("Signup error:", error);
     return NextResponse.json(

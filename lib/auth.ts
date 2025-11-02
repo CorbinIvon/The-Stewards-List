@@ -32,7 +32,11 @@ export async function hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt(config.security.bcrypt.rounds);
     return bcrypt.hash(password, salt);
   } catch (error) {
-    throw new Error(`Failed to hash password: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to hash password: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
 
@@ -90,38 +94,94 @@ interface JWTPayload {
  * @param str - String to encode
  * @returns Base64URL encoded string
  */
-function base64UrlEncode(str: string): string {
-  return Buffer.from(str)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
+/**
+ * Base64URL encode helper that works in both Node and Web runtimes.
+ * Accepts a string or ArrayBuffer/Uint8Array and returns a base64url string.
+ */
+function base64UrlEncodeInput(
+  input: string | ArrayBuffer | Uint8Array
+): string {
+  let b64: string;
+
+  if (typeof input === "string") {
+    // encode string to bytes
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(input);
+    input = bytes;
+  }
+
+  const bytes = input instanceof ArrayBuffer ? new Uint8Array(input) : input;
+
+  if (typeof btoa !== "undefined") {
+    // browser / edge
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    b64 = btoa(binary);
+  } else {
+    // Node
+    b64 = Buffer.from(bytes).toString("base64");
+  }
+
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
 /**
- * Base64URL decode a string
- * @param str - String to decode
- * @returns Decoded string
+ * Base64URL decode to string
  */
-function base64UrlDecode(str: string): string {
-  let padded = str.replace(/\-/g, "+").replace(/_/g, "/");
-  while (padded.length % 4) {
-    padded += "=";
+function base64UrlDecodeToString(str: string): string {
+  const padded =
+    str.replace(/-/g, "+").replace(/_/g, "/") +
+    "".padEnd((4 - (str.length % 4)) % 4, "=");
+
+  if (typeof atob !== "undefined") {
+    const binary = atob(padded);
+    // convert binary to string
+    let result = "";
+    for (let i = 0; i < binary.length; i++) result += binary[i];
+    return result;
   }
+
   return Buffer.from(padded, "base64").toString();
 }
 
 /**
- * Create HMAC SHA256 signature
- * @param message - Message to sign
- * @param secret - Secret key
- * @returns HMAC SHA256 signature
+ * Create HMAC SHA256 signature in a runtime-compatible way.
+ * Returns a base64url encoded signature string.
  */
-function createSignature(message: string, secret: string): string {
+async function createSignature(
+  message: string,
+  secret: string
+): Promise<string> {
+  // Use Web Crypto (available in edge) when possible
+  if (
+    typeof globalThis !== "undefined" &&
+    (globalThis as any).crypto &&
+    (globalThis as any).crypto.subtle
+  ) {
+    const enc = new TextEncoder();
+    const keyData = enc.encode(secret);
+    const key = await (globalThis as any).crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const signature = await (globalThis as any).crypto.subtle.sign(
+      "HMAC",
+      key,
+      enc.encode(message)
+    );
+    return base64UrlEncodeInput(new Uint8Array(signature));
+  }
+
+  // Fallback to Node crypto
   const crypto = require("crypto");
   const hmac = crypto.createHmac("sha256", secret);
   hmac.update(message);
-  return base64UrlEncode(hmac.digest());
+  return base64UrlEncodeInput(hmac.digest());
 }
 
 /**
@@ -132,10 +192,10 @@ function createSignature(message: string, secret: string): string {
  * @param expiresIn - Token expiration time in seconds (default: TOKEN_EXPIRY)
  * @returns The signed JWT token
  */
-export function generateToken(
+export async function generateToken(
   user: AuthUser,
   expiresIn: number = TOKEN_EXPIRY
-): string {
+): Promise<string> {
   try {
     const now = Math.floor(Date.now() / 1000);
     const exp = now + expiresIn;
@@ -152,17 +212,21 @@ export function generateToken(
     };
 
     // Create JWT parts
-    const encodedHeader = base64UrlEncode(JSON.stringify(header));
-    const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+    const encodedHeader = base64UrlEncodeInput(JSON.stringify(header));
+    const encodedPayload = base64UrlEncodeInput(JSON.stringify(payload));
     const message = `${encodedHeader}.${encodedPayload}`;
 
     // Create signature
-    const signature = createSignature(message, TOKEN_SECRET);
+    const signature = await createSignature(message, TOKEN_SECRET);
 
     // Return complete JWT
     return `${message}.${signature}`;
   } catch (error) {
-    throw new Error(`Failed to generate token: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to generate token: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
 
@@ -174,7 +238,7 @@ export function generateToken(
  * @returns The decoded AuthUser payload if valid
  * @throws Error if token is invalid or expired
  */
-export function verifyToken(token: string): AuthUser {
+export async function verifyToken(token: string): Promise<AuthUser> {
   try {
     // Split token into parts
     const parts = token.split(".");
@@ -186,14 +250,14 @@ export function verifyToken(token: string): AuthUser {
 
     // Verify signature
     const message = `${encodedHeader}.${encodedPayload}`;
-    const expectedSignature = createSignature(message, TOKEN_SECRET);
+    const expectedSignature = await createSignature(message, TOKEN_SECRET);
 
     if (signature !== expectedSignature) {
       throw new Error("Invalid token signature");
     }
 
     // Decode and parse payload
-    const payloadStr = base64UrlDecode(encodedPayload);
+    const payloadStr = base64UrlDecodeToString(encodedPayload);
     const payload = JSON.parse(payloadStr) as AuthUser & {
       iat: number;
       exp: number;
@@ -210,7 +274,9 @@ export function verifyToken(token: string): AuthUser {
     return user;
   } catch (error) {
     throw new Error(
-      `Failed to verify token: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to verify token: ${
+        error instanceof Error ? error.message : String(error)
+      }`
     );
   }
 }
@@ -226,7 +292,9 @@ export function verifyToken(token: string): AuthUser {
  * @param authHeader - The Authorization header value
  * @returns The token or null if not present
  */
-export function extractTokenFromHeader(authHeader: string | null): string | null {
+export function extractTokenFromHeader(
+  authHeader: string | null
+): string | null {
   if (!authHeader) {
     return null;
   }
@@ -246,7 +314,9 @@ export function extractTokenFromHeader(authHeader: string | null): string | null
  * @param cookieHeader - The Cookie header value
  * @returns The token or null if not present
  */
-export function extractTokenFromCookie(cookieHeader: string | null): string | null {
+export function extractTokenFromCookie(
+  cookieHeader: string | null
+): string | null {
   if (!cookieHeader) {
     return null;
   }
@@ -272,9 +342,11 @@ export function extractTokenFromCookie(cookieHeader: string | null): string | nu
  * @param token - The JWT token
  * @returns The AuthUser if token is valid, null otherwise
  */
-export function getUserFromToken(token: string): AuthUser | null {
+export async function getUserFromToken(
+  token: string
+): Promise<AuthUser | null> {
   try {
-    return verifyToken(token);
+    return await verifyToken(token);
   } catch (error) {
     console.error("Error extracting user from token:", error);
     return null;
@@ -287,7 +359,9 @@ export function getUserFromToken(token: string): AuthUser | null {
  * @param authHeader - The Authorization header value
  * @returns The AuthUser if header is valid, null otherwise
  */
-export function getUserFromAuthHeader(authHeader: string | null): AuthUser | null {
+export async function getUserFromAuthHeader(
+  authHeader: string | null
+): Promise<AuthUser | null> {
   const token = extractTokenFromHeader(authHeader);
   if (!token) {
     return null;
@@ -301,7 +375,9 @@ export function getUserFromAuthHeader(authHeader: string | null): AuthUser | nul
  * @param cookieHeader - The Cookie header value
  * @returns The AuthUser if cookie is valid, null otherwise
  */
-export function getUserFromCookie(cookieHeader: string | null): AuthUser | null {
+export async function getUserFromCookie(
+  cookieHeader: string | null
+): Promise<AuthUser | null> {
   const token = extractTokenFromCookie(cookieHeader);
   if (!token) {
     return null;
@@ -338,7 +414,7 @@ export function createAuthUserFromUser(user: User): AuthUser {
  */
 export function isTokenAboutToExpire(token: string): boolean {
   try {
-    const payload = JSON.parse(base64UrlDecode(token.split(".")[1]));
+    const payload = JSON.parse(base64UrlDecodeToString(token.split(".")[1]));
     const expiresIn = payload.exp - Math.floor(Date.now() / 1000);
     return expiresIn < 60 * 60; // Less than 1 hour
   } catch {

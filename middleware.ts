@@ -101,9 +101,7 @@ function isProtectedRoute(pathname: string): boolean {
  * Check if a route is a protected API route
  */
 function isProtectedApiRoute(pathname: string): boolean {
-  return PROTECTED_API_PATTERNS.some((pattern) =>
-    pathname.startsWith(pattern)
-  );
+  return PROTECTED_API_PATTERNS.some((pattern) => pathname.startsWith(pattern));
 }
 
 /**
@@ -134,18 +132,18 @@ function extractToken(request: NextRequest): string | null {
 /**
  * Check if request has valid authentication
  */
-function hasValidAuth(request: NextRequest): boolean {
+async function hasValidAuth(request: NextRequest): Promise<boolean> {
   // Try to extract token from Authorization header
   const authHeader = request.headers.get("Authorization");
   if (authHeader) {
-    const user = getUserFromAuthHeader(authHeader);
+    const user = await getUserFromAuthHeader(authHeader);
     if (user) return true;
   }
 
   // Try to extract token from cookies
   const cookieHeader = request.headers.get("Cookie");
   if (cookieHeader) {
-    const user = getUserFromCookie(cookieHeader);
+    const user = await getUserFromCookie(cookieHeader);
     if (user) return true;
   }
 
@@ -182,7 +180,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Check if route requires authentication
   if (isProtectedRoute(pathname) || isProtectedApiRoute(pathname)) {
     // Verify authentication
-    if (!hasValidAuth(request)) {
+    if (!(await hasValidAuth(request))) {
       // Redirect to login for protected routes
       if (isProtectedRoute(pathname)) {
         const loginUrl = new URL("/login", request.url);

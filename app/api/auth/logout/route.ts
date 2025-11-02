@@ -20,7 +20,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json(response, { status: 200 });
+    // Clear the auth cookie
+    const clearCookie =
+      `authToken=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT` +
+      (process.env.NODE_ENV === "production" ? "; Secure" : "");
+
+    return NextResponse.json(response, {
+      status: 200,
+      headers: { "Set-Cookie": clearCookie },
+    });
   } catch (error) {
     console.error("Logout error:", error);
     return NextResponse.json(

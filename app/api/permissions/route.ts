@@ -48,15 +48,15 @@ interface PermissionInclude {
  * Extract authenticated user from request headers
  * Checks both Authorization header and cookies
  */
-function extractAuthUser(request: NextRequest) {
+async function extractAuthUser(request: NextRequest) {
   const authHeader = request.headers.get("Authorization");
   if (authHeader) {
-    return getUserFromAuthHeader(authHeader);
+    return await getUserFromAuthHeader(authHeader);
   }
 
   const cookieHeader = request.headers.get("Cookie");
   if (cookieHeader) {
-    return getUserFromCookie(cookieHeader);
+    return await getUserFromCookie(cookieHeader);
   }
 
   return null;
@@ -130,7 +130,7 @@ export async function GET(
 ): Promise<NextResponse<PaginatedResponse<any> | ApiResponse<any>>> {
   try {
     // Extract and verify authentication
-    const authUser = extractAuthUser(request);
+    const authUser = await extractAuthUser(request);
     if (!authUser) {
       return NextResponse.json(
         {
@@ -163,7 +163,11 @@ export async function GET(
 
     if (pageSizeParam) {
       const parsedPageSize = parseInt(pageSizeParam, 10);
-      if (!isNaN(parsedPageSize) && parsedPageSize > 0 && parsedPageSize <= 100) {
+      if (
+        !isNaN(parsedPageSize) &&
+        parsedPageSize > 0 &&
+        parsedPageSize <= 100
+      ) {
         pageSize = parsedPageSize;
       }
     }
@@ -300,7 +304,7 @@ export async function POST(
 ): Promise<NextResponse<ApiResponse<any>>> {
   try {
     // Extract and verify authentication
-    const authUser = extractAuthUser(request);
+    const authUser = await extractAuthUser(request);
     if (!authUser) {
       return NextResponse.json(
         {
@@ -388,8 +392,7 @@ export async function POST(
         {
           success: false,
           error: "Bad request",
-          details:
-            "permission must be one of: READ, WRITE, DELETE, ADMIN",
+          details: "permission must be one of: READ, WRITE, DELETE, ADMIN",
           timestamp: new Date().toISOString(),
         },
         { status: 400 }
@@ -408,7 +411,8 @@ export async function POST(
         {
           success: false,
           error: "Forbidden",
-          details: "You do not have permission to manage permissions for this task",
+          details:
+            "You do not have permission to manage permissions for this task",
           timestamp: new Date().toISOString(),
         },
         { status: 403 }
@@ -479,10 +483,7 @@ export async function POST(
       timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json(
-      response,
-      { status: isCreated ? 201 : 200 }
-    );
+    return NextResponse.json(response, { status: isCreated ? 201 : 200 });
   } catch (error) {
     console.error("POST /api/permissions error:", error);
     return NextResponse.json(

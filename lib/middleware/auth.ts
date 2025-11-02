@@ -5,10 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import {
-  extractTokenFromHeader,
-  getUserFromToken,
-} from "@/lib/auth";
+import { extractTokenFromHeader, getUserFromToken } from "@/lib/auth";
 import type { AuthUser, UserRole } from "@/lib/types";
 
 // ============================================================================
@@ -38,7 +35,9 @@ export type AuthResult = { user: AuthUser } | NextResponse;
  *   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
  * }
  */
-export function getUserFromRequest(request: NextRequest): AuthUser | null {
+export async function getUserFromRequest(
+  request: NextRequest
+): Promise<AuthUser | null> {
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader) {
@@ -50,7 +49,7 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
       return null;
     }
 
-    const user = getUserFromToken(token);
+    const user = await getUserFromToken(token);
     return user;
   } catch (error) {
     console.error("Error extracting user from request:", error);
@@ -77,10 +76,8 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
  *   // ... rest of handler
  * }
  */
-export async function requireAuth(
-  request: NextRequest
-): Promise<AuthResult> {
-  const user = getUserFromRequest(request);
+export async function requireAuth(request: NextRequest): Promise<AuthResult> {
+  const user = await getUserFromRequest(request);
 
   if (!user) {
     return NextResponse.json(
@@ -314,10 +311,7 @@ export function isUserActive(user: AuthUser): boolean {
 export function unauthorizedResponse(
   message: string = "Authentication required"
 ): NextResponse {
-  return NextResponse.json(
-    { success: false, error: message },
-    { status: 401 }
-  );
+  return NextResponse.json({ success: false, error: message }, { status: 401 });
 }
 
 /**
@@ -334,8 +328,5 @@ export function unauthorizedResponse(
 export function forbiddenResponse(
   message: string = "Access denied"
 ): NextResponse {
-  return NextResponse.json(
-    { success: false, error: message },
-    { status: 403 }
-  );
+  return NextResponse.json({ success: false, error: message }, { status: 403 });
 }

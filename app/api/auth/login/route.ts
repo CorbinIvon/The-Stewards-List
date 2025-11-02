@@ -161,7 +161,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let token: string;
     try {
       const authUser = createAuthUserFromUser(user);
-      token = generateToken(authUser, TOKEN_EXPIRY);
+      token = await generateToken(authUser, TOKEN_EXPIRY);
     } catch (error) {
       console.error("Token generation error:", error);
       return NextResponse.json(
@@ -186,7 +186,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json(response, { status: 200 });
+    // Set HttpOnly cookie so middleware/server can read token securely
+    const cookieVal =
+      `authToken=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${TOKEN_EXPIRY}` +
+      (process.env.NODE_ENV === "production" ? "; Secure" : "");
+
+    return NextResponse.json(response, {
+      status: 200,
+      headers: { "Set-Cookie": cookieVal },
+    });
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

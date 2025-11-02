@@ -7,10 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import {
-  getUserFromAuthHeader,
-  getUserFromCookie,
-} from "@/lib/auth";
+import { getUserFromAuthHeader, getUserFromCookie } from "@/lib/auth";
 import type {
   Chat,
   CreateChatRequest,
@@ -71,18 +68,18 @@ const CHAT_INCLUDE = {
  * Extract authenticated user from request
  * Checks both Authorization header and cookies
  */
-function extractUser(request: NextRequest): AuthUser | null {
+async function extractUser(request: NextRequest): Promise<AuthUser | null> {
   // Try Authorization header first
   const authHeader = request.headers.get("Authorization");
   if (authHeader) {
-    const user = getUserFromAuthHeader(authHeader);
+    const user = await getUserFromAuthHeader(authHeader);
     if (user) return user;
   }
 
   // Fall back to cookies
   const cookieHeader = request.headers.get("Cookie");
   if (cookieHeader) {
-    const user = getUserFromCookie(cookieHeader);
+    const user = await getUserFromCookie(cookieHeader);
     if (user) return user;
   }
 
@@ -120,10 +117,7 @@ async function canAccessChat(
       where: {
         id: taskId,
         isDeleted: false,
-        OR: [
-          { ownerId: userId },
-          { assignments: { some: { userId } } },
-        ],
+        OR: [{ ownerId: userId }, { assignments: { some: { userId } } }],
       },
     });
     return task !== null;
@@ -145,18 +139,27 @@ async function canAccessChat(
 /**
  * Validate queryKey parameter
  */
-function validateQueryKey(queryKey: unknown): { valid: boolean; error?: string } {
+function validateQueryKey(queryKey: unknown): {
+  valid: boolean;
+  error?: string;
+} {
   if (!queryKey || typeof queryKey !== "string") {
     return { valid: false, error: "queryKey is required and must be a string" };
   }
 
   const trimmed = queryKey.trim();
   if (trimmed.length < MIN_QUERY_KEY_LENGTH) {
-    return { valid: false, error: `queryKey must be at least ${MIN_QUERY_KEY_LENGTH} character` };
+    return {
+      valid: false,
+      error: `queryKey must be at least ${MIN_QUERY_KEY_LENGTH} character`,
+    };
   }
 
   if (trimmed.length > MAX_QUERY_KEY_LENGTH) {
-    return { valid: false, error: `queryKey must not exceed ${MAX_QUERY_KEY_LENGTH} characters` };
+    return {
+      valid: false,
+      error: `queryKey must not exceed ${MAX_QUERY_KEY_LENGTH} characters`,
+    };
   }
 
   return { valid: true };
@@ -172,11 +175,17 @@ function validateMessage(message: unknown): { valid: boolean; error?: string } {
 
   const trimmed = message.trim();
   if (trimmed.length < MIN_MESSAGE_LENGTH) {
-    return { valid: false, error: `message must be at least ${MIN_MESSAGE_LENGTH} character` };
+    return {
+      valid: false,
+      error: `message must be at least ${MIN_MESSAGE_LENGTH} character`,
+    };
   }
 
   if (trimmed.length > MAX_MESSAGE_LENGTH) {
-    return { valid: false, error: `message must not exceed ${MAX_MESSAGE_LENGTH} characters` };
+    return {
+      valid: false,
+      error: `message must not exceed ${MAX_MESSAGE_LENGTH} characters`,
+    };
   }
 
   return { valid: true };
@@ -185,7 +194,9 @@ function validateMessage(message: unknown): { valid: boolean; error?: string } {
 /**
  * Validate taskId if provided
  */
-async function validateTaskId(taskId: string | undefined): Promise<{ valid: boolean; error?: string }> {
+async function validateTaskId(
+  taskId: string | undefined
+): Promise<{ valid: boolean; error?: string }> {
   if (!taskId) {
     return { valid: true };
   }
@@ -212,7 +223,9 @@ async function validateTaskId(taskId: string | undefined): Promise<{ valid: bool
 /**
  * Validate quoteChatId if provided
  */
-async function validateQuoteChatId(quoteChatId: string | undefined): Promise<{ valid: boolean; error?: string }> {
+async function validateQuoteChatId(
+  quoteChatId: string | undefined
+): Promise<{ valid: boolean; error?: string }> {
   if (!quoteChatId) {
     return { valid: true };
   }
@@ -251,7 +264,11 @@ function parsePaginationParams(request: NextRequest): {
   if (pageStr) {
     const parsed = parseInt(pageStr, 10);
     if (isNaN(parsed) || parsed < 1) {
-      return { page: 1, pageSize: DEFAULT_PAGE_SIZE, error: "page must be a positive integer" };
+      return {
+        page: 1,
+        pageSize: DEFAULT_PAGE_SIZE,
+        error: "page must be a positive integer",
+      };
     }
     page = parsed;
   }
@@ -259,7 +276,11 @@ function parsePaginationParams(request: NextRequest): {
   if (pageSizeStr) {
     const parsed = parseInt(pageSizeStr, 10);
     if (isNaN(parsed) || parsed < 1 || parsed > 100) {
-      return { page, pageSize: DEFAULT_PAGE_SIZE, error: "pageSize must be between 1 and 100" };
+      return {
+        page,
+        pageSize: DEFAULT_PAGE_SIZE,
+        error: "pageSize must be between 1 and 100",
+      };
     }
     pageSize = parsed;
   }
@@ -292,7 +313,7 @@ function parsePaginationParams(request: NextRequest): {
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // Extract and verify authentication
-    const user = extractUser(request);
+    const user = await extractUser(request);
     if (!user) {
       return NextResponse.json(
         {
@@ -445,7 +466,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Extract and verify authentication
-    const user = extractUser(request);
+    const user = await extractUser(request);
     if (!user) {
       return NextResponse.json(
         {
@@ -528,7 +549,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Validate quoteChatId if provided
-    const quoteChatIdValidation = await validateQuoteChatId(quoteChatId as string | undefined);
+    const quoteChatIdValidation = await validateQuoteChatId(
+      quoteChatId as string | undefined
+    );
     if (!quoteChatIdValidation.valid) {
       return NextResponse.json(
         {

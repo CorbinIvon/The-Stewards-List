@@ -6,16 +6,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import {
-  getUserFromAuthHeader,
-  getUserFromCookie,
-} from "@/lib/auth";
-import type {
-  Chat,
-  ApiResponse,
-  AuthUser,
-  UserRole,
-} from "@/lib/types";
+import { getUserFromAuthHeader, getUserFromCookie } from "@/lib/auth";
+import type { Chat, ApiResponse, AuthUser, UserRole } from "@/lib/types";
 
 // ============================================================================
 // CONSTANTS & CONFIGURATION
@@ -65,18 +57,18 @@ const CHAT_INCLUDE = {
  * Extract authenticated user from request
  * Checks both Authorization header and cookies
  */
-function extractUser(request: NextRequest): AuthUser | null {
+async function extractUser(request: NextRequest): Promise<AuthUser | null> {
   // Try Authorization header first
   const authHeader = request.headers.get("Authorization");
   if (authHeader) {
-    const user = getUserFromAuthHeader(authHeader);
+    const user = await getUserFromAuthHeader(authHeader);
     if (user) return user;
   }
 
   // Fall back to cookies
   const cookieHeader = request.headers.get("Cookie");
   if (cookieHeader) {
-    const user = getUserFromCookie(cookieHeader);
+    const user = await getUserFromCookie(cookieHeader);
     if (user) return user;
   }
 
@@ -113,10 +105,7 @@ async function canAccessChat(
       where: {
         id: chat.taskId,
         isDeleted: false,
-        OR: [
-          { ownerId: userId },
-          { assignments: { some: { userId } } },
-        ],
+        OR: [{ ownerId: userId }, { assignments: { some: { userId } } }],
       },
     });
     return task !== null;
@@ -176,11 +165,17 @@ function validateMessage(message: unknown): { valid: boolean; error?: string } {
 
   const trimmed = message.trim();
   if (trimmed.length < MIN_MESSAGE_LENGTH) {
-    return { valid: false, error: `Message must be at least ${MIN_MESSAGE_LENGTH} character` };
+    return {
+      valid: false,
+      error: `Message must be at least ${MIN_MESSAGE_LENGTH} character`,
+    };
   }
 
   if (trimmed.length > MAX_MESSAGE_LENGTH) {
-    return { valid: false, error: `Message must not exceed ${MAX_MESSAGE_LENGTH} characters` };
+    return {
+      valid: false,
+      error: `Message must not exceed ${MAX_MESSAGE_LENGTH} characters`,
+    };
   }
 
   return { valid: true };
@@ -217,7 +212,7 @@ export async function GET(
 ): Promise<NextResponse> {
   try {
     // Extract and verify authentication
-    const user = extractUser(request);
+    const user = await extractUser(request);
     if (!user) {
       return NextResponse.json(
         {
@@ -331,7 +326,7 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     // Extract and verify authentication
-    const user = extractUser(request);
+    const user = await extractUser(request);
     if (!user) {
       return NextResponse.json(
         {
@@ -503,7 +498,7 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     // Extract and verify authentication
-    const user = extractUser(request);
+    const user = await extractUser(request);
     if (!user) {
       return NextResponse.json(
         {
