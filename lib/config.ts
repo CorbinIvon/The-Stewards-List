@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Environment variable schema validation
@@ -6,21 +6,21 @@ import { z } from 'zod';
  */
 const envSchema = z.object({
   // Database
-  DATABASE_URL: z.string().url('DATABASE_URL must be a valid URL'),
+  DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL"),
 
   // Node Environment
   NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .default('development'),
+    .enum(["development", "production", "test"])
+    .default("development"),
 
   // Next.js (optional, has defaults)
-  PORT: z.string().optional().default('3000'),
-  HOST: z.string().optional().default('localhost'),
+  PORT: z.string().optional().default("3000"),
+  HOST: z.string().optional().default("localhost"),
 
   // Security
   SESSION_SECRET: z
     .string()
-    .min(32, 'SESSION_SECRET must be at least 32 characters')
+    .min(32, "SESSION_SECRET must be at least 32 characters")
     .optional(),
 
   // Future integrations (optional)
@@ -39,11 +39,11 @@ function validateEnv() {
     return env;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('❌ Environment variable validation failed:');
-      error.errors.forEach((err) => {
-        console.error(`  - ${err.path.join('.')}: ${err.message}`);
+      console.error("❌ Environment variable validation failed:");
+      error.issues.forEach((err) => {
+        console.error(`  - ${err.path.join(".")}: ${err.message}`);
       });
-      throw new Error('Invalid environment configuration');
+      throw new Error("Invalid environment configuration");
     }
     throw error;
   }
@@ -53,18 +53,18 @@ function validateEnv() {
  * Configuration object with validated environment variables
  */
 export const config = {
-  env: process.env.NODE_ENV || 'development',
-  isDevelopment: process.env.NODE_ENV === 'development',
-  isProduction: process.env.NODE_ENV === 'production',
-  isTest: process.env.NODE_ENV === 'test',
+  env: process.env.NODE_ENV || "development",
+  isDevelopment: process.env.NODE_ENV === "development",
+  isProduction: process.env.NODE_ENV === "production",
+  isTest: process.env.NODE_ENV === "test",
 
   database: {
     url: process.env.DATABASE_URL!,
   },
 
   server: {
-    port: parseInt(process.env.PORT || '3000', 10),
-    host: process.env.HOST || 'localhost',
+    port: parseInt(process.env.PORT || "3000", 10),
+    host: process.env.HOST || "localhost",
   },
 
   security: {
@@ -97,10 +97,10 @@ export const config = {
  * Validate environment on module import (fail-fast)
  * Only validate in non-build contexts
  */
-if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
+if (process.env.NODE_ENV !== "production" || process.env.VERCEL !== "1") {
   try {
     validateEnv();
-    console.log('✅ Environment configuration validated');
+    console.log("✅ Environment configuration validated");
   } catch (error) {
     if (!process.env.SKIP_ENV_VALIDATION) {
       process.exit(1);

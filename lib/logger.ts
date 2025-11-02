@@ -1,13 +1,13 @@
-import { config } from './config';
+import { config } from "./config";
 
 /**
  * Log levels in order of severity
  */
 export enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR',
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  WARN = "WARN",
+  ERROR = "ERROR",
 }
 
 /**
@@ -40,7 +40,7 @@ const contextStorage: {
 /**
  * Serialize error with stack trace
  */
-function serializeError(error: unknown): LogEntry['error'] {
+function serializeError(error: unknown): LogEntry["error"] {
   if (error instanceof Error) {
     return {
       name: error.name,
@@ -49,15 +49,15 @@ function serializeError(error: unknown): LogEntry['error'] {
     };
   }
 
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return {
-      name: 'Error',
+      name: "Error",
       message: error,
     };
   }
 
   return {
-    name: 'UnknownError',
+    name: "UnknownError",
     message: String(error),
   };
 }
@@ -75,12 +75,12 @@ function formatLogEntry(entry: LogEntry): string {
     // Timestamp and level with color coding
     const timestamp = entry.timestamp;
     const levelColor = {
-      [LogLevel.DEBUG]: '\x1b[36m', // Cyan
-      [LogLevel.INFO]: '\x1b[32m',  // Green
-      [LogLevel.WARN]: '\x1b[33m',  // Yellow
-      [LogLevel.ERROR]: '\x1b[31m', // Red
+      [LogLevel.DEBUG]: "\x1b[36m", // Cyan
+      [LogLevel.INFO]: "\x1b[32m", // Green
+      [LogLevel.WARN]: "\x1b[33m", // Yellow
+      [LogLevel.ERROR]: "\x1b[31m", // Red
     };
-    const resetColor = '\x1b[0m';
+    const resetColor = "\x1b[0m";
 
     parts.push(`${levelColor[entry.level]}[${entry.level}]${resetColor}`);
     parts.push(timestamp);
@@ -111,7 +111,7 @@ function formatLogEntry(entry: LogEntry): string {
       parts.push(`\n  Context: ${JSON.stringify(entry.context, null, 2)}`);
     }
 
-    return parts.join(' ');
+    return parts.join(" ");
   }
 
   // JSON format for production (compatible with CloudWatch, Sentry, etc.)
@@ -158,11 +158,11 @@ function createLogEntry(
     timestamp: new Date().toISOString(),
     level,
     message,
-    service: 'the-stewards-list',
+    service: "the-stewards-list",
     requestId: options?.requestId || contextStorage.requestId,
     userId: options?.userId || contextStorage.userId,
-    ...(options?.error && { error: serializeError(options.error) }),
-    ...(options?.context && { context: options.context }),
+    ...(options?.error ? { error: serializeError(options.error) } : {}),
+    ...(options?.context ? { context: options.context } : {}),
   };
 }
 
@@ -260,7 +260,7 @@ export const logger = {
       headers?: Record<string, unknown>;
     }
   ): void {
-    this.info('Incoming request', {
+    this.info("Incoming request", {
       method,
       path,
       queryParams: options?.queryParams,
@@ -279,17 +279,14 @@ export const logger = {
     duration: number
   ): void {
     const level = statusCode >= 500 ? LogLevel.ERROR : LogLevel.INFO;
-    const levelMethod = level === LogLevel.ERROR ? 'error' : 'info';
+    const levelMethod = level === LogLevel.ERROR ? "error" : "info";
 
-    this[levelMethod as 'error' | 'info'](
-      `${method} ${path} - ${statusCode}`,
-      {
-        method,
-        path,
-        statusCode,
-        durationMs: duration,
-      }
-    );
+    this[levelMethod as "error" | "info"](`${method} ${path} - ${statusCode}`, {
+      method,
+      path,
+      statusCode,
+      durationMs: duration,
+    });
   },
 
   /**

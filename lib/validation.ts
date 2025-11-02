@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { NextResponse } from 'next/server';
+import { z } from "zod";
+import { NextResponse } from "next/server";
 
 /**
  * Password validation schema with strict requirements
@@ -11,18 +11,21 @@ import { NextResponse } from 'next/server';
  */
 const passwordSchema = z
   .string()
-  .min(12, 'Password must be at least 12 characters long')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-  .regex(/\d/, 'Password must contain at least one number')
-  .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Password must contain at least one special character');
+  .min(12, "Password must be at least 12 characters long")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/\d/, "Password must contain at least one number")
+  .regex(
+    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+    "Password must contain at least one special character"
+  );
 
 /**
  * Email validation schema with proper email format
  */
 const emailSchema = z
   .string()
-  .email('Must be a valid email address')
+  .email("Must be a valid email address")
   .toLowerCase()
   .trim();
 
@@ -31,17 +34,21 @@ const emailSchema = z
  * Removes potentially dangerous characters and trims whitespace
  */
 function sanitizeString(input: string): string {
-  return input
-    .trim()
-    .replace(/[<>\"']/g, (match) => {
-      const escapeMap: { [key: string]: string } = {
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-      };
-      return escapeMap[match] || match;
-    });
+  return input.trim().replace(/[<>\"']/g, (match) => {
+    // Avoid dynamic object property access to satisfy security lint rule
+    switch (match) {
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#x27;";
+      default:
+        return match;
+    }
+  });
 }
 
 /**
@@ -57,14 +64,17 @@ export const createUserSchema = z.object({
   email: emailSchema,
   username: z
     .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(32, 'Username must be at most 32 characters')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens')
+    .min(3, "Username must be at least 3 characters")
+    .max(32, "Username must be at most 32 characters")
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      "Username can only contain letters, numbers, underscores, and hyphens"
+    )
     .transform(sanitizeString),
   displayName: z
     .string()
-    .min(1, 'Display name is required')
-    .max(128, 'Display name must be at most 128 characters')
+    .min(1, "Display name is required")
+    .max(128, "Display name must be at most 128 characters")
     .transform(sanitizeString),
   password: passwordSchema,
 });
@@ -76,19 +86,19 @@ export type CreateUserInput = z.infer<typeof createUserSchema>;
  * Validates: ownerId, title, description (optional), frequency (optional)
  */
 export const createTaskSchema = z.object({
-  ownerId: z.string().uuid('Invalid user ID format'),
+  ownerId: z.string().uuid("Invalid user ID format"),
   title: z
     .string()
-    .min(1, 'Task title is required')
-    .max(256, 'Task title must be at most 256 characters')
+    .min(1, "Task title is required")
+    .max(256, "Task title must be at most 256 characters")
     .transform(sanitizeString),
   description: z
     .string()
-    .max(2000, 'Task description must be at most 2000 characters')
+    .max(2000, "Task description must be at most 2000 characters")
     .transform(sanitizeString)
     .optional(),
   frequency: z
-    .enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY', 'ONE_TIME'])
+    .enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY", "ONE_TIME"])
     .optional(),
 });
 
@@ -109,11 +119,11 @@ export type TaskQuery = z.infer<typeof taskQuerySchema>;
  * Validates: userId, taskId, permission
  */
 export const createPermissionSchema = z.object({
-  userId: z.string().uuid('Invalid user ID format'),
-  taskId: z.string().uuid('Invalid task ID format'),
+  userId: z.string().uuid("Invalid user ID format"),
+  taskId: z.string().uuid("Invalid task ID format"),
   permission: z
-    .enum(['READ', 'WRITE', 'DELETE', 'ADMIN'])
-    .describe('Permission level for the user on this task'),
+    .enum(["READ", "WRITE", "DELETE", "ADMIN"])
+    .describe("Permission level for the user on this task"),
 });
 
 export type CreatePermissionInput = z.infer<typeof createPermissionSchema>;
@@ -134,8 +144,8 @@ export type PermissionQuery = z.infer<typeof permissionQuerySchema>;
  * Validates: taskId, userId
  */
 export const createTaskLogSchema = z.object({
-  taskId: z.string().uuid('Invalid task ID format'),
-  userId: z.string().uuid('Invalid user ID format'),
+  taskId: z.string().uuid("Invalid task ID format"),
+  userId: z.string().uuid("Invalid user ID format"),
 });
 
 export type CreateTaskLogInput = z.infer<typeof createTaskLogSchema>;
@@ -158,14 +168,14 @@ export type TaskLogQuery = z.infer<typeof taskLogQuerySchema>;
 export const createChatSchema = z.object({
   queryKey: z
     .string()
-    .min(1, 'Query key is required')
-    .max(256, 'Query key must be at most 256 characters')
+    .min(1, "Query key is required")
+    .max(256, "Query key must be at most 256 characters")
     .transform(sanitizeString),
-  userId: z.string().uuid('Invalid user ID format'),
+  userId: z.string().uuid("Invalid user ID format"),
   message: z
     .string()
-    .min(1, 'Message cannot be empty')
-    .max(4000, 'Message must be at most 4000 characters')
+    .min(1, "Message cannot be empty")
+    .max(4000, "Message must be at most 4000 characters")
     .transform(sanitizeString),
   quoteChatId: z.string().uuid().optional(),
 });
@@ -229,8 +239,9 @@ export function validateRequest<T>(
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        errors: error.errors.map((err) => ({
-          field: err.path.join('.') || 'unknown',
+        // Use `issues` (Zod's current property) which contains path/message
+        errors: error.issues.map((err) => ({
+          field: err.path.join(".") || "unknown",
           message: err.message,
         })),
       };
@@ -240,8 +251,8 @@ export function validateRequest<T>(
       success: false,
       errors: [
         {
-          field: 'unknown',
-          message: 'An unexpected validation error occurred',
+          field: "unknown",
+          message: "An unexpected validation error occurred",
         },
       ],
     };
@@ -256,10 +267,13 @@ export function validateRequest<T>(
  * @param statusCode - HTTP status code (default: 400)
  * @returns NextResponse with formatted error
  */
-export function validationErrorResponse(error: ValidationError, statusCode: number = 400) {
+export function validationErrorResponse(
+  error: ValidationError,
+  statusCode: number = 400
+) {
   return NextResponse.json(
     {
-      error: 'Validation failed',
+      error: "Validation failed",
       details: error.errors,
     },
     { status: statusCode }
@@ -272,6 +286,8 @@ export function validationErrorResponse(error: ValidationError, statusCode: numb
  * @param result - ValidationResult to check
  * @returns true if result is an error
  */
-export function isValidationError<T>(result: ValidationResult<T>): result is ValidationError {
+export function isValidationError<T>(
+  result: ValidationResult<T>
+): result is ValidationError {
   return !result.success;
 }
