@@ -7,6 +7,18 @@
   --border: #334155; /* slate-700 */
   --text: #f1f5f9; /* slate-100 */
   --muted: #94a3b8; /* slate-400 */
+  /* Semantic color tokens for badge variants (dark backgrounds with lighter text) */
+  --success: #064e3b; /* green-800 */
+  --success-foreground: #d1fae5; /* green-100 */
+
+  --warning: #92400e; /* amber-700 */
+  --warning-foreground: #ffedd5; /* amber-100 */
+
+  --danger: #7f1d1d; /* red-800 */
+  --danger-foreground: #fee2e2; /* red-100 */
+
+  --info: #1e3a8a; /* blue-800 */
+  --info-foreground: #dbeafe; /* blue-100 */
 }
 
 /* Ensure the document background and base text color use the theme vars */

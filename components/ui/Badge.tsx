@@ -38,11 +38,14 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
 
     // Variant styles with proper contrast
     const variantMap: Record<typeof variant, string> = {
-      default: "bg-gray-100 text-gray-800",
-      success: "bg-green-100 text-green-800",
-      warning: "bg-yellow-100 text-yellow-800",
-      danger: "bg-red-100 text-red-800",
-      info: "bg-blue-100 text-blue-800",
+      // dark badge backgrounds with lighter text to match dashboard theme
+      default: "bg-[color:var(--border)] text-[color:var(--text)]",
+      success:
+        "bg-[color:var(--success)] text-[color:var(--success-foreground)]",
+      warning:
+        "bg-[color:var(--warning)] text-[color:var(--warning-foreground)]",
+      danger: "bg-[color:var(--danger)] text-[color:var(--danger-foreground)]",
+      info: "bg-[color:var(--info)] text-[color:var(--info-foreground)]",
     };
 
     // eslint-disable-next-line security/detect-object-injection
