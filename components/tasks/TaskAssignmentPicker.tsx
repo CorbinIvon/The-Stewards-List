@@ -95,8 +95,8 @@ export default function TaskAssignmentPicker({
           err instanceof ApiClientError
             ? err.message
             : err instanceof Error
-              ? err.message
-              : "Failed to fetch users";
+            ? err.message
+            : "Failed to fetch users";
 
         setFetchError(errorMessage);
         console.error("Error fetching users:", err);
@@ -116,7 +116,9 @@ export default function TaskAssignmentPicker({
     { value: "", label: "Unassigned" },
     ...users.map((user) => ({
       value: user.id,
-      label: showRoleBadges ? `${user.displayName} (${user.role})` : user.displayName,
+      label: showRoleBadges
+        ? `${user.displayName} (${user.role})`
+        : user.displayName,
     })),
   ];
 
@@ -133,10 +135,10 @@ export default function TaskAssignmentPicker({
   if (isLoading) {
     return (
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
-        <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+        <label className="text-sm font-medium text-slate-300">{label}</label>
+        <div className="flex items-center gap-2 px-3 py-2 border border-slate-700 rounded-lg bg-slate-800">
           <Spinner size="sm" />
-          <span className="text-sm text-gray-600">Loading users...</span>
+          <span className="text-sm text-slate-400">Loading users...</span>
         </div>
       </div>
     );

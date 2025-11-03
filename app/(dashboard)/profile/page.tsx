@@ -301,7 +301,7 @@ export default function ProfilePage(): React.ReactElement {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-slate-400">Loading...</p>
         </div>
       </div>
     );
@@ -311,7 +311,7 @@ export default function ProfilePage(): React.ReactElement {
     router.push("/login");
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-600">Redirecting to login...</p>
+        <p className="text-slate-400">Redirecting to login...</p>
       </div>
     );
   }
@@ -322,7 +322,7 @@ export default function ProfilePage(): React.ReactElement {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" />
-          <p className="text-gray-600">Loading profile...</p>
+          <p className="text-slate-400">Loading profile...</p>
         </div>
       </div>
     );
@@ -335,12 +335,12 @@ export default function ProfilePage(): React.ReactElement {
           BREADCRUMB NAVIGATION
           =================================================================== */}
 
-      <div className="flex items-center gap-2 text-sm text-gray-600">
+      <div className="flex items-center gap-2 text-sm text-slate-400">
         <Link href="/dashboard" className="hover:text-blue-600">
           Dashboard
         </Link>
         <span>/</span>
-        <span className="text-gray-900 font-medium">Profile</span>
+        <span className="text-slate-100 font-medium">Profile</span>
       </div>
 
       {/* ===================================================================
@@ -389,7 +389,7 @@ export default function ProfilePage(): React.ReactElement {
                 {/* User Info */}
                 <div>
                   <CardTitle>{pageState.user.displayName}</CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-slate-400 mt-1">
                     {pageState.user.email}
                   </p>
                 </div>
@@ -483,32 +483,32 @@ export default function ProfilePage(): React.ReactElement {
           <CardBody className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-gray-600 font-medium">Username</p>
-                <p className="text-gray-900">{pageState.user.username}</p>
+                <p className="text-slate-400 font-medium">Username</p>
+                <p className="text-slate-100">{pageState.user.username}</p>
               </div>
               <div>
-                <p className="text-gray-600 font-medium">Role</p>
-                <p className="text-gray-900">
+                <p className="text-slate-400 font-medium">Role</p>
+                <p className="text-slate-100">
                   {toTitleCase(pageState.user.role.toLowerCase())}
                 </p>
               </div>
               <div>
-                <p className="text-gray-600 font-medium">Member Since</p>
-                <p className="text-gray-900">
+                <p className="text-slate-400 font-medium">Member Since</p>
+                <p className="text-slate-100">
                   {formatDate(pageState.user.createdAt)}
                 </p>
               </div>
               <div>
-                <p className="text-gray-600 font-medium">Last Login</p>
-                <p className="text-gray-900">
+                <p className="text-slate-400 font-medium">Last Login</p>
+                <p className="text-slate-100">
                   {pageState.user.lastLoginAt
                     ? formatDateTime(pageState.user.lastLoginAt)
                     : "Never"}
                 </p>
               </div>
               <div className="col-span-2">
-                <p className="text-gray-600 font-medium">User ID</p>
-                <p className="text-gray-900 font-mono text-xs break-all">
+                <p className="text-slate-400 font-medium">User ID</p>
+                <p className="text-slate-100 font-mono text-xs break-all">
                   {pageState.user.id}
                 </p>
               </div>

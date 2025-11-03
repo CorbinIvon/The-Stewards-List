@@ -256,7 +256,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
     return (
       <header
         ref={ref}
-        className="sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm"
+        className="sticky top-0 z-30 w-full bg-[color:var(--panel)] border-b border-[color:var(--border)] shadow-sm"
       >
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
@@ -266,7 +266,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
               {showMobileMenu && (
                 <button
                   onClick={onMobileMenuClick}
-                  className="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="lg:hidden p-2 text-[color:var(--muted)] hover:text-[color:var(--text)] hover:bg-[color:var(--border)] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   aria-label="Toggle mobile menu"
                   type="button"
                 >
@@ -290,7 +290,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
               {/* Breadcrumbs or title */}
               <div className="flex-1 min-w-0">
                 {breadcrumbs.length <= 2 ? (
-                  <h1 className="text-xl font-semibold text-gray-900 truncate">
+                  <h1 className="text-xl font-semibold text-[color:var(--text)] truncate">
                     {pageTitle}
                   </h1>
                 ) : (
@@ -303,7 +303,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                         >
                           {index > 0 && (
                             <svg
-                              className="w-4 h-4 text-gray-400"
+                              className="w-4 h-4 text-[color:var(--muted)]"
                               xmlns="http://www.w3.org/2000/svg"
                               fill="none"
                               viewBox="0 0 24 24"
@@ -318,7 +318,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                             </svg>
                           )}
                           {index === breadcrumbs.length - 1 ? (
-                            <span className="text-sm font-medium text-gray-900 truncate">
+                            <span className="text-sm font-medium text-[color:var(--text)] truncate">
                               {crumb.label}
                             </span>
                           ) : (
@@ -347,7 +347,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                   setFocusedItemIndex(-1);
                 }}
                 onKeyDown={handleDropdownKeyDown}
-                className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="flex items-center gap-2 px-3 py-2 text-[color:var(--muted)] hover:text-[color:var(--text)] hover:bg-[color:var(--border)] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-expanded={isDropdownOpen}
                 aria-haspopup="true"
                 aria-label={`User menu for ${displayName}`}
@@ -360,10 +360,10 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
 
                 {/* User info - hidden on mobile */}
                 <div className="hidden sm:flex flex-col items-start min-w-0">
-                  <span className="text-sm font-medium text-gray-900 truncate">
+                  <span className="text-sm font-medium text-[color:var(--text)] truncate">
                     {displayName}
                   </span>
-                  <span className="text-xs text-gray-500 truncate">
+                  <span className="text-xs text-[color:var(--muted)] truncate">
                     {user.email}
                   </span>
                 </div>
@@ -371,7 +371,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                 {/* Chevron icon */}
                 <svg
                   className={cn(
-                    "w-4 h-4 text-gray-600 transition-transform flex-shrink-0",
+                    "w-4 h-4 text-[color:var(--muted)] transition-transform flex-shrink-0",
                     isDropdownOpen && "rotate-180"
                   )}
                   xmlns="http://www.w3.org/2000/svg"
@@ -391,20 +391,22 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
               {/* Dropdown menu */}
               {isDropdownOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50"
+                  className="absolute right-0 mt-2 w-56 bg-[color:var(--panel)] border-[color:var(--border)] rounded-lg shadow-lg py-1 z-50"
                   role="menu"
                   aria-orientation="vertical"
                 >
                   {/* User info header - shown on mobile */}
-                  <div className="sm:hidden px-4 py-3 border-b border-gray-200">
-                    <p className="text-sm font-medium text-gray-900">
+                  <div className="sm:hidden px-4 py-3 border-b border-[color:var(--border)]">
+                    <p className="text-sm font-medium text-[color:var(--text)]">
                       {displayName}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                    <p className="text-xs text-[color:var(--muted)] mt-1">
+                      {user.email}
+                    </p>
                   </div>
 
                   {/* Role badge */}
-                  <div className="px-4 py-3 border-b border-gray-200">
+                  <div className="px-4 py-3 border-b border-[color:var(--border)]">
                     <span
                       className={cn(
                         "inline-block px-2 py-1 text-xs font-medium rounded",
@@ -422,7 +424,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                       if (el) dropdownItemsRef.current[0] = el;
                     }}
                     onKeyDown={handleDropdownKeyDown}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
+                    className="block w-full text-left px-4 py-2 text-sm text-[color:var(--text)] hover:bg-[color:var(--border)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
                     role="menuitem"
                     onClick={() => setIsDropdownOpen(false)}
                   >
@@ -436,7 +438,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                       if (el) dropdownItemsRef.current[1] = el;
                     }}
                     onKeyDown={handleDropdownKeyDown}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
+                    className="block w-full text-left px-4 py-2 text-sm text-[color:var(--text)] hover:bg-[color:var(--border)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
                     role="menuitem"
                     onClick={() => setIsDropdownOpen(false)}
                   >
@@ -444,7 +446,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                   </Link>
 
                   {/* Divider */}
-                  <div className="border-t border-gray-200" />
+                  <div className="border-t border-[color:var(--border)]" />
 
                   {/* Logout button */}
                   <button
@@ -453,7 +455,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                     }}
                     onClick={handleLogout}
                     onKeyDown={handleDropdownKeyDown}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-inset"
+                    className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-[color:var(--border)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-inset"
                     role="menuitem"
                     type="button"
                   >

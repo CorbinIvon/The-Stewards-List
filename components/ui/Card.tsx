@@ -50,7 +50,7 @@ export function Card({ children, className }: CardProps): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-lg border border-gray-200 bg-white shadow-sm",
+        "rounded-lg border border-slate-700 bg-slate-800 shadow-sm",
         className
       )}
     >
@@ -68,11 +68,7 @@ export function CardHeader({
   children,
   className,
 }: CardHeaderProps): JSX.Element {
-  return (
-    <div className={cn("px-6 py-4", className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn("px-6 py-4", className)}>{children}</div>;
 }
 
 /**
@@ -85,7 +81,7 @@ export function CardTitle({
   className,
 }: CardTitleProps): JSX.Element {
   return (
-    <h3 className={cn("text-lg font-semibold text-gray-900", className)}>
+    <h3 className={cn("text-lg font-semibold text-slate-100", className)}>
       {children}
     </h3>
   );
@@ -97,11 +93,7 @@ export function CardTitle({
  * @param className - Additional CSS classes to apply
  */
 export function CardBody({ children, className }: CardBodyProps): JSX.Element {
-  return (
-    <div className={cn("px-6 py-4", className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn("px-6 py-4", className)}>{children}</div>;
 }
 
 /**
@@ -114,7 +106,7 @@ export function CardFooter({
   className,
 }: CardFooterProps): JSX.Element {
   return (
-    <div className={cn("border-t border-gray-200 px-6 py-4", className)}>
+    <div className={cn("border-t border-slate-700 px-6 py-4", className)}>
       {children}
     </div>
   );

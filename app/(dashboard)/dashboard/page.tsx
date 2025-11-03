@@ -271,7 +271,7 @@ export default function DashboardPage(): React.ReactElement {
           <Card>
             <CardBody className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-600">
+                <h4 className="text-sm font-medium text-slate-400">
                   Assigned to Me
                 </h4>
                 <span className="text-2xl font-bold text-purple-600">
@@ -286,7 +286,9 @@ export default function DashboardPage(): React.ReactElement {
           <Card>
             <CardBody className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-600">Completed</h4>
+                <h4 className="text-sm font-medium text-slate-400">
+                  Completed
+                </h4>
                 <span className="text-2xl font-bold text-green-600">
                   {state.stats.completedTasks}
                 </span>
@@ -299,7 +301,7 @@ export default function DashboardPage(): React.ReactElement {
           <Card>
             <CardBody className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-600">Overdue</h4>
+                <h4 className="text-sm font-medium text-slate-400">Overdue</h4>
                 <span className="text-2xl font-bold text-red-600">
                   {state.stats.overdueTasks}
                 </span>
@@ -341,7 +343,7 @@ export default function DashboardPage(): React.ReactElement {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-200">
+                    <tr className="border-b border-slate-700">
                       <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
                         Task Title
                       </th>

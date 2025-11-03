@@ -165,16 +165,16 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
           <div
             ref={dialogRef}
             className={cn(
-              "relative w-full mx-4 bg-white rounded-lg shadow-lg",
+              "relative w-full mx-4 bg-slate-800 rounded-lg shadow-lg",
               sizeClassName,
               className
             )}
           >
             {/* Modal header with title and close button */}
-            <div className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-200">
+            <div className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-700">
               <h2
                 id="modal-title"
-                className="text-lg font-semibold text-gray-900"
+                className="text-lg font-semibold text-slate-100"
               >
                 {title}
               </h2>
@@ -183,7 +183,7 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
               <button
                 ref={firstFocusableRef}
                 onClick={onClose}
-                className="inline-flex items-center justify-center p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                className="inline-flex items-center justify-center p-1 text-slate-400 hover:text-slate-100 hover:bg-slate-700 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                 aria-label="Close modal"
                 type="button"
               >
@@ -205,11 +205,13 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
             </div>
 
             {/* Modal content area */}
-            <div className="px-4 py-4 sm:px-6 sm:py-5">{children}</div>
+            <div className="px-4 py-4 sm:px-6 sm:py-5 text-slate-100">
+              {children}
+            </div>
 
             {/* Optional footer section - appears below content if provided */}
             {footer && (
-              <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3">
+              <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-700 bg-slate-800 flex items-center justify-end gap-3">
                 {footer}
               </div>
             )}

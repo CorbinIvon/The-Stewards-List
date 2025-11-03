@@ -329,7 +329,7 @@ export function TaskForm({
               disabled={isSubmitting}
               maxLength={MAX_TITLE_LENGTH}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-slate-400">
               {formData.title.length}/{MAX_TITLE_LENGTH}
             </p>
           </div>
@@ -382,13 +382,13 @@ export function TaskForm({
 
           {/* Assignee Field - Placeholder for TaskAssignmentPicker */}
           <div>
-            <div className="text-sm font-medium text-gray-700 mb-1">
+            <div className="text-sm font-medium text-slate-300 mb-1">
               Assignee
             </div>
-            <div className="px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-gray-500 text-sm">
+            <div className="px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 text-sm">
               Coming soon: Task Assignment Picker
             </div>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-slate-400">
               TaskAssignmentPicker component will be integrated here
             </p>
           </div>

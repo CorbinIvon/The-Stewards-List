@@ -133,7 +133,9 @@ const formatRelativeTime = (date: Date | string): string => {
  *
  * @param taskId - ID of the task to fetch logs for
  */
-export default function TaskHistory({ taskId }: TaskHistoryProps): React.ReactElement {
+export default function TaskHistory({
+  taskId,
+}: TaskHistoryProps): React.ReactElement {
   const [state, setState] = useState<TaskHistoryState>({
     logs: [],
     isLoading: true,
@@ -200,7 +202,7 @@ export default function TaskHistory({ taskId }: TaskHistoryProps): React.ReactEl
         <CardBody className="flex items-center justify-center py-12">
           <div className="flex flex-col items-center gap-3">
             <Spinner size="md" />
-            <p className="text-sm text-gray-600">Loading task history...</p>
+            <p className="text-sm text-slate-400">Loading task history...</p>
           </div>
         </CardBody>
       </Card>
@@ -231,7 +233,7 @@ export default function TaskHistory({ taskId }: TaskHistoryProps): React.ReactEl
           <CardTitle>Task History</CardTitle>
         </CardHeader>
         <CardBody className="flex flex-col items-center justify-center py-12">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-400">
             No history available for this task yet.
           </p>
         </CardBody>
@@ -252,7 +254,7 @@ export default function TaskHistory({ taskId }: TaskHistoryProps): React.ReactEl
         {/* Timeline container */}
         <div className="relative">
           {/* Vertical line through timeline */}
-          <div className="absolute left-7 top-0 bottom-0 w-0.5 bg-gray-200" />
+          <div className="absolute left-7 top-0 bottom-0 w-0.5 bg-slate-700" />
 
           {/* Timeline entries */}
           <div className="space-y-0">
@@ -260,12 +262,14 @@ export default function TaskHistory({ taskId }: TaskHistoryProps): React.ReactEl
               <div
                 key={log.id}
                 className={`relative pl-20 py-4 px-6 ${
-                  index !== state.logs.length - 1 ? "border-b border-gray-100" : ""
+                  index !== state.logs.length - 1
+                    ? "border-b border-slate-700"
+                    : ""
                 }`}
               >
                 {/* Timeline bullet point */}
                 <div
-                  className="absolute left-2 top-6 w-3 h-3 rounded-full bg-blue-500 border-2 border-white"
+                  className="absolute left-2 top-6 w-3 h-3 rounded-full bg-blue-500 border-2 border-slate-800"
                   aria-hidden="true"
                 />
 
@@ -282,31 +286,33 @@ export default function TaskHistory({ taskId }: TaskHistoryProps): React.ReactEl
                     </Badge>
 
                     {/* Actor name */}
-                    <span className="text-sm font-medium text-gray-900">
-                      {log.user?.displayName || log.user?.username || "Unknown User"}
+                    <span className="text-sm font-medium text-slate-100">
+                      {log.user?.displayName ||
+                        log.user?.username ||
+                        "Unknown User"}
                     </span>
 
                     {/* Relative timestamp */}
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-slate-400">
                       {formatRelativeTime(log.createdAt)}
                     </span>
                   </div>
 
                   {/* Full timestamp as secondary info */}
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-slate-500">
                     {formatDateTime(log.createdAt)}
                   </div>
 
                   {/* Notes/description if available */}
                   {log.note && (
-                    <div className="mt-2 p-3 bg-gray-50 rounded text-sm text-gray-700 border border-gray-200">
+                    <div className="mt-2 p-3 bg-slate-800 rounded text-sm text-slate-300 border border-slate-700">
                       {log.note}
                     </div>
                   )}
 
                   {/* Metadata if available */}
                   {log.metadata && Object.keys(log.metadata).length > 0 && (
-                    <div className="mt-2 text-xs text-gray-600 font-mono bg-gray-50 p-2 rounded border border-gray-200 overflow-x-auto">
+                    <div className="mt-2 text-xs text-slate-400 font-mono bg-slate-800 p-2 rounded border border-slate-700 overflow-x-auto">
                       <pre>{JSON.stringify(log.metadata, null, 2)}</pre>
                     </div>
                   )}

@@ -23,7 +23,10 @@ import type {
   TaskFrequency,
   UserRole,
 } from "@/lib/types";
-import { TaskPriority as TaskPriorityEnum, TaskFrequency as TaskFrequencyEnum } from "@/lib/types";
+import {
+  TaskPriority as TaskPriorityEnum,
+  TaskFrequency as TaskFrequencyEnum,
+} from "@/lib/types";
 
 // ============================================================================
 // TYPES
@@ -205,7 +208,9 @@ export default function NewTaskPage(): React.ReactElement {
    * Handle form field changes
    */
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ): void => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -245,8 +250,7 @@ export default function NewTaskPage(): React.ReactElement {
         title: form.title.trim(),
         description: form.description.trim() || undefined,
         priority: form.priority,
-        frequency:
-          (form.frequency as TaskFrequency | undefined) || undefined,
+        frequency: (form.frequency as TaskFrequency | undefined) || undefined,
         dueDate: form.dueDate || undefined,
       };
 
@@ -269,8 +273,8 @@ export default function NewTaskPage(): React.ReactElement {
         err instanceof ApiClientError
           ? err.message
           : err instanceof Error
-            ? err.message
-            : "Failed to create task";
+          ? err.message
+          : "Failed to create task";
 
       console.error("Task creation error:", err);
 
@@ -299,7 +303,7 @@ export default function NewTaskPage(): React.ReactElement {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-slate-400">Loading...</p>
         </div>
       </div>
     );
@@ -311,7 +315,7 @@ export default function NewTaskPage(): React.ReactElement {
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
           <CardBody className="text-center">
-            <p className="text-gray-600 mb-4">
+            <p className="text-slate-400 mb-4">
               You don&apos;t have permission to create tasks.
             </p>
             <Link href="/tasks">
@@ -324,7 +328,7 @@ export default function NewTaskPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-900 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-2xl space-y-6">
         {/* ===================================================================
             BREADCRUMB NAVIGATION
@@ -447,7 +451,7 @@ export default function NewTaskPage(): React.ReactElement {
                 FORM FOOTER WITH ACTIONS
                 =============================================================== */}
 
-            <div className="border-t border-gray-200 px-6 py-4 flex gap-3 justify-end">
+            <div className="border-t border-slate-700 px-6 py-4 flex gap-3 justify-end">
               <Button
                 type="button"
                 variant="secondary"

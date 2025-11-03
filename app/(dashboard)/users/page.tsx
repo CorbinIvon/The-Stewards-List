@@ -426,7 +426,7 @@ export default function UsersPage(): React.ReactElement {
                     </div>
 
                     {/* Joined Date */}
-                    <div className="pt-2 border-t border-gray-200">
+                    <div className="pt-2 border-t border-slate-700">
                       <p className="text-xs text-[color:var(--muted)] mb-1">
                         Joined
                       </p>
@@ -450,7 +450,7 @@ export default function UsersPage(): React.ReactElement {
             =================================================================== */}
 
         {filteredUsers.length > 0 && (
-          <div className="text-sm text-gray-600 text-center">
+          <div className="text-sm text-slate-400 text-center">
             Showing {filteredUsers.length} of {state.users.length} users
           </div>
         )}

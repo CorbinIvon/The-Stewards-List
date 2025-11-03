@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { useAuth, useAuthUser } from "@/lib/auth-context";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardTitle, CardBody, CardFooter } from "@/components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardBody,
+  CardFooter,
+} from "@/components/ui/Card";
 import Alert from "@/components/ui/Alert";
 import Modal from "@/components/ui/Modal";
 import { UserRole } from "@/lib/types";
@@ -97,7 +103,9 @@ export default function SettingsPage(): React.ReactElement {
       await apiClient.deleteUser(user.id);
 
       // Show success message
-      showSuccessAlert("Your account has been successfully deleted. Redirecting...");
+      showSuccessAlert(
+        "Your account has been successfully deleted. Redirecting..."
+      );
 
       // Wait a moment for user to see message, then logout and redirect
       setTimeout(async () => {
@@ -109,8 +117,8 @@ export default function SettingsPage(): React.ReactElement {
         err instanceof ApiClientError
           ? err.message
           : err instanceof Error
-            ? err.message
-            : "Failed to delete account";
+          ? err.message
+          : "Failed to delete account";
 
       showErrorAlert(errorMessage);
       setIsDeleteModalOpen(false);
@@ -164,19 +172,19 @@ export default function SettingsPage(): React.ReactElement {
   // ========================================================================
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-900">
       {/* Header and Breadcrumb */}
-      <div className="border-b border-gray-200 bg-white">
+      <div className="border-b border-slate-700 bg-slate-800">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
-          <div className="mb-4 text-sm text-gray-600">
+          <div className="mb-4 text-sm text-slate-400">
             <span>Dashboard</span>
             <span className="mx-2">/</span>
-            <span className="font-semibold text-gray-900">Settings</span>
+            <span className="font-semibold text-slate-100">Settings</span>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="mt-1 text-gray-600">
+          <h1 className="text-3xl font-bold text-slate-100">Settings</h1>
+          <p className="mt-1 text-slate-400">
             Manage your account settings, preferences, and security options
           </p>
         </div>
@@ -212,7 +220,7 @@ export default function SettingsPage(): React.ReactElement {
               </div>
 
               {/* Password Change Form Placeholder */}
-              <div className="rounded-lg bg-gray-50 p-4">
+              <div className="rounded-lg bg-slate-800 p-4">
                 <div className="space-y-4">
                   <div>
                     <label
@@ -224,7 +232,7 @@ export default function SettingsPage(): React.ReactElement {
                     <input
                       id="current-password"
                       type="password"
-                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-lg border border-slate-700 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       placeholder="Enter your current password"
                     />
                   </div>
@@ -261,7 +269,7 @@ export default function SettingsPage(): React.ReactElement {
                 </div>
               </div>
             </CardBody>
-            <CardFooter className="bg-gray-50">
+            <CardFooter className="bg-slate-800">
               <Button variant="primary" size="md">
                 Update Password
               </Button>
@@ -275,10 +283,12 @@ export default function SettingsPage(): React.ReactElement {
             </CardHeader>
             <CardBody className="space-y-6">
               {/* Notifications Preference */}
-              <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+              <div className="flex items-center justify-between border-b border-slate-700 pb-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900">Notifications</h4>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <h4 className="font-semibold text-slate-100">
+                    Notifications
+                  </h4>
+                  <p className="mt-1 text-sm text-slate-400">
                     Receive email notifications about task updates and reminders
                   </p>
                 </div>
@@ -329,8 +339,8 @@ export default function SettingsPage(): React.ReactElement {
                 <div>
                   <h4 className="font-semibold text-red-900">Delete Account</h4>
                   <p className="mt-1 text-sm text-red-800">
-                    Permanently delete your account and all associated data. This action cannot
-                    be undone.
+                    Permanently delete your account and all associated data.
+                    This action cannot be undone.
                   </p>
                 </div>
               </CardBody>
@@ -375,7 +385,9 @@ export default function SettingsPage(): React.ReactElement {
                   <label className="block text-sm font-medium text-gray-700">
                     Role
                   </label>
-                  <p className="mt-1 text-gray-900 capitalize">{user?.role.toLowerCase()}</p>
+                  <p className="mt-1 text-gray-900 capitalize">
+                    {user?.role.toLowerCase()}
+                  </p>
                 </div>
 
                 {/* Account Status */}
@@ -409,7 +421,12 @@ export default function SettingsPage(): React.ReactElement {
         size="md"
         footer={
           <>
-            <Button variant="secondary" size="md" onClick={closeDeleteModal} disabled={isDeleting}>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={closeDeleteModal}
+              disabled={isDeleting}
+            >
               Cancel
             </Button>
             <Button
@@ -428,14 +445,14 @@ export default function SettingsPage(): React.ReactElement {
           <div className="rounded-lg bg-red-50 p-4">
             <p className="text-sm font-semibold text-red-900">Warning</p>
             <p className="mt-2 text-sm text-red-800">
-              This action is permanent and cannot be undone. Your account and all associated data
-              will be permanently deleted.
+              This action is permanent and cannot be undone. Your account and
+              all associated data will be permanently deleted.
             </p>
           </div>
 
           <p className="text-sm text-gray-600">
-            Are you sure you want to delete your account? Please confirm this action by clicking
-            the &quot;Delete Account&quot; button below.
+            Are you sure you want to delete your account? Please confirm this
+            action by clicking the &quot;Delete Account&quot; button below.
           </p>
         </div>
       </Modal>

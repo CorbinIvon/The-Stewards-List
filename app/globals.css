@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+/* Dark theme CSS variables used throughout the dashboard */
+:root {
+  --bg: #0f172a; /* slate-900 */
+  --panel: #1f2937; /* slate-800 */
+  --border: #334155; /* slate-700 */
+  --text: #f1f5f9; /* slate-100 */
+  --muted: #94a3b8; /* slate-400 */
+}
+
+/* Ensure the document background and base text color use the theme vars */
+html,
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100%;
+}
