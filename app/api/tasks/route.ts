@@ -85,9 +85,7 @@ function validateTaskData(data: any): {
   }
 
   if (data.priority !== undefined) {
-    if (
-      !["LOW", "MEDIUM", "HIGH", "URGENT"].includes(data.priority)
-    ) {
+    if (!["LOW", "MEDIUM", "HIGH", "URGENT"].includes(data.priority)) {
       errors.push("priority must be one of: LOW, MEDIUM, HIGH, URGENT");
     }
   }
@@ -105,9 +103,15 @@ function validateTaskData(data: any): {
   if (data.frequency !== undefined) {
     if (
       data.frequency !== null &&
-      !["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "ONCE"].includes(
-        data.frequency
-      )
+      ![
+        "DAILY",
+        "WEEKLY",
+        "BIWEEKLY",
+        "MONTHLY",
+        "QUARTERLY",
+        "YEARLY",
+        "ONCE",
+      ].includes(data.frequency)
     ) {
       errors.push(
         "frequency must be one of: DAILY, WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY, ONCE"
@@ -116,10 +120,7 @@ function validateTaskData(data: any): {
   }
 
   if (data.dueDate !== undefined) {
-    if (
-      data.dueDate !== null &&
-      isNaN(new Date(data.dueDate).getTime())
-    ) {
+    if (data.dueDate !== null && isNaN(new Date(data.dueDate).getTime())) {
       errors.push("dueDate must be a valid ISO date string");
     }
   }
@@ -201,7 +202,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const response: PaginatedResponse<TaskWithOwner> = {
       success: true,
-      data: tasks as TaskWithOwner[],
+      data: tasks as unknown as TaskWithOwner[],
       pagination: {
         page,
         pageSize,
@@ -293,6 +294,52 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Prepare task data
+    // Compute schedule: assignDate and dueBy
+    function computeSchedule(
+      freq: TaskFrequency | null,
+      providedDue?: string | null
+    ) {
+      const now = new Date();
+      if (providedDue) {
+        return { assignDate: now, dueBy: new Date(providedDue) };
+      }
+
+      if (!freq) {
+        return { assignDate: null, dueBy: null };
+      }
+
+      const start = now;
+      const end = new Date(start.getTime());
+      switch (freq) {
+        case "DAILY":
+          end.setDate(end.getDate() + 1);
+          break;
+        case "WEEKLY":
+          end.setDate(end.getDate() + 7);
+          break;
+        case "BIWEEKLY":
+          end.setDate(end.getDate() + 14);
+          break;
+        case "MONTHLY":
+          end.setMonth(end.getMonth() + 1);
+          break;
+        case "QUARTERLY":
+          end.setMonth(end.getMonth() + 3);
+          break;
+        case "YEARLY":
+          end.setFullYear(end.getFullYear() + 1);
+          break;
+        case "ONCE":
+          return { assignDate: start, dueBy: null };
+        default:
+          return { assignDate: null, dueBy: null };
+      }
+
+      return { assignDate: start, dueBy: end };
+    }
+
+    const schedule = computeSchedule(frequency || null, dueDate || null);
+
     const taskData: any = {
       ownerId: user.id,
       title: title.trim(),
@@ -300,6 +347,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       priority: priority || "MEDIUM",
       frequency: frequency || null,
       dueDate: dueDate ? new Date(dueDate) : null,
+      assignDate: schedule.assignDate,
+      dueBy: schedule.dueBy,
       status: "TODO",
     };
 
@@ -311,13 +360,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         include: taskInclude,
       });
 
-      // Create initial TaskLog entry
+      // Create initial TaskLog entry (cast data as any to match runtime shape)
       await tx.taskLog.create({
-        data: {
-          taskId: newTask.id,
-          userId: user.id,
-          action: "CREATED",
-        },
+        data: { taskId: newTask.id, userId: user.id, action: "CREATED" } as any,
       });
 
       return newTask;
@@ -325,7 +370,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const response: ApiResponse<TaskWithOwner> = {
       success: true,
-      data: task as TaskWithOwner,
+      data: task as unknown as TaskWithOwner,
       timestamp: new Date().toISOString(),
     };
 

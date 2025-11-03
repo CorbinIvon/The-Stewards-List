@@ -110,7 +110,12 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   frequency: TaskFrequency | null;
+  // Original generic due date (kept for backward compatibility)
   dueDate: Date | null;
+  // When the task should be started (schedule start)
+  assignDate: Date | null;
+  // When the scheduled occurrence is due by
+  dueBy: Date | null;
   completedAt: Date | null;
   isDeleted: boolean;
   deletedAt: Date | null;
@@ -480,9 +485,7 @@ export type UserWithoutPassword = Omit<User, "passwordHash">;
 /**
  * Optional version of Task fields
  */
-export type PartialTask = Partial<
-  Omit<Task, "id" | "createdAt" | "updatedAt">
->;
+export type PartialTask = Partial<Omit<Task, "id" | "createdAt" | "updatedAt">>;
 
 /**
  * Type for extracting enum values

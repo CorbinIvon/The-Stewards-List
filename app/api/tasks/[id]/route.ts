@@ -217,7 +217,7 @@ export async function GET(
     }
     const { user } = auth;
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if task exists and is not deleted
     const task = await prisma.task.findUnique({
@@ -225,7 +225,7 @@ export async function GET(
       include: taskInclude,
     });
 
-    if (!task || task.isDeleted) {
+    if (!task || (task as any).isDeleted) {
       return NextResponse.json(
         {
           success: false,
@@ -251,7 +251,7 @@ export async function GET(
 
     const response: ApiResponse<TaskWithOwner> = {
       success: true,
-      data: task as TaskWithOwner,
+      data: task as unknown as TaskWithOwner,
       timestamp: new Date().toISOString(),
     };
 
@@ -332,20 +332,56 @@ export async function PATCH(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
+
+    // Helper to compute assignDate and dueBy
+    function computeSchedule(
+      freq: TaskFrequency | null,
+      providedDue?: string | null
+    ) {
+      const now = new Date();
+      if (providedDue) {
+        return { assignDate: now, dueBy: new Date(providedDue) };
+      }
+
+      if (!freq) {
+        return { assignDate: null, dueBy: null };
+      }
+
+      const start = now;
+      const end = new Date(start.getTime());
+      switch (freq) {
+        case "DAILY":
+          end.setDate(end.getDate() + 1);
+          break;
+        case "WEEKLY":
+          end.setDate(end.getDate() + 7);
+          break;
+        case "BIWEEKLY":
+          end.setDate(end.getDate() + 14);
+          break;
+        case "MONTHLY":
+          end.setMonth(end.getMonth() + 1);
+          break;
+        case "QUARTERLY":
+          end.setMonth(end.getMonth() + 3);
+          break;
+        case "YEARLY":
+          end.setFullYear(end.getFullYear() + 1);
+          break;
+        case "ONCE":
+          return { assignDate: start, dueBy: null };
+        default:
+          return { assignDate: null, dueBy: null };
+      }
+
+      return { assignDate: start, dueBy: end };
+    }
 
     // Get current task
-    const currentTask = await prisma.task.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        status: true,
-        ownerId: true,
-        isDeleted: true,
-      },
-    });
+    const currentTask = await prisma.task.findUnique({ where: { id } });
 
-    if (!currentTask || currentTask.isDeleted) {
+    if (!currentTask || (currentTask as any).isDeleted) {
       return NextResponse.json(
         {
           success: false,
@@ -385,6 +421,20 @@ export async function PATCH(
     }
     if (body.dueDate !== undefined) {
       updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+      // If a dueDate is explicitly provided, set assignDate to now and dueBy to provided date
+      const schedule = computeSchedule(
+        null,
+        body.dueDate ? body.dueDate : null
+      );
+      updateData.assignDate = schedule.assignDate;
+      updateData.dueBy = schedule.dueBy;
+    }
+
+    // If frequency changed (and no explicit dueDate provided), recompute schedule from now
+    if (body.frequency !== undefined && body.dueDate === undefined) {
+      const schedule = computeSchedule(body.frequency || null, null);
+      updateData.assignDate = schedule.assignDate;
+      updateData.dueBy = schedule.dueBy;
     }
 
     // Handle status changes
@@ -392,13 +442,16 @@ export async function PATCH(
       updateData.status = body.status;
 
       // If status changes to COMPLETED, set completedAt
-      if (body.status === "COMPLETED" && currentTask.status !== "COMPLETED") {
+      if (
+        body.status === "COMPLETED" &&
+        (currentTask as any).status !== "COMPLETED"
+      ) {
         updateData.completedAt = new Date();
       }
       // If status changes from COMPLETED to something else, clear completedAt
       else if (
         body.status !== "COMPLETED" &&
-        currentTask.status === "COMPLETED"
+        (currentTask as any).status === "COMPLETED"
       ) {
         updateData.completedAt = null;
       }
@@ -406,7 +459,7 @@ export async function PATCH(
 
     // Determine log action
     const logAction =
-      body.status === "COMPLETED" && currentTask.status !== "COMPLETED"
+      body.status === "COMPLETED" && (currentTask as any).status !== "COMPLETED"
         ? "COMPLETED"
         : "UPDATED";
 
@@ -423,13 +476,13 @@ export async function PATCH(
           userId: user.id,
           action: logAction,
           note: body.note || undefined,
-        },
+        } as any,
       }),
     ]);
 
     const response: ApiResponse<TaskWithOwner> = {
       success: true,
-      data: updatedTask as TaskWithOwner,
+      data: updatedTask as unknown as TaskWithOwner,
       timestamp: new Date().toISOString(),
     };
 
@@ -483,7 +536,7 @@ export async function DELETE(
     }
     const { user } = auth;
 
-    const { id } = params;
+    const { id } = await params;
 
     // Get current task
     const currentTask = await prisma.task.findUnique({
@@ -495,7 +548,7 @@ export async function DELETE(
       },
     });
 
-    if (!currentTask || currentTask.isDeleted) {
+    if (!currentTask || (currentTask as any).isDeleted) {
       return NextResponse.json(
         {
           success: false,
@@ -535,7 +588,7 @@ export async function DELETE(
           userId: user.id,
           action: "CANCELLED",
           note: "Task deleted",
-        },
+        } as any,
       }),
     ]);
 

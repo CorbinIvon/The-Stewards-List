@@ -1,0 +1,1 @@
+Lint the project. Recursively check all files for linting errors and output a summary of issues found. After the output, provide suggestions for fixing the errors, then fix the errors one by one. Run the linting process again after each fix to ensure all issues are resolved. Lint individual files when detected to isolate the source of errors.
