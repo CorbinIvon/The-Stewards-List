@@ -103,8 +103,8 @@ export default function UsersPage(): React.ReactElement {
           err instanceof ApiClientError
             ? err.message
             : err instanceof Error
-              ? err.message
-              : "Failed to load users";
+            ? err.message
+            : "Failed to load users";
 
         console.error("Users page error:", err);
 
@@ -148,7 +148,12 @@ export default function UsersPage(): React.ReactElement {
 
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [state.users, state.searchQuery, state.selectedRole, state.selectedStatus]);
+  }, [
+    state.users,
+    state.searchQuery,
+    state.selectedRole,
+    state.selectedStatus,
+  ]);
 
   // =========================================================================
   // EVENT HANDLERS
@@ -227,9 +232,7 @@ export default function UsersPage(): React.ReactElement {
   /**
    * Get badge variant for user status
    */
-  function getStatusBadgeVariant(
-    isActive: boolean
-  ): "success" | "default" {
+  function getStatusBadgeVariant(isActive: boolean): "success" | "default" {
     return isActive ? "success" : "default";
   }
 
@@ -249,14 +252,14 @@ export default function UsersPage(): React.ReactElement {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-gray-600">Loading users...</p>
+          <p className="text-[color:var(--muted)]">Loading users...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[color:var(--bg)] p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* ===================================================================
             BREADCRUMB & HEADER
@@ -264,11 +267,13 @@ export default function UsersPage(): React.ReactElement {
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-sm text-gray-600 mb-2">
+            <div className="text-sm text-[color:var(--muted)] mb-2">
               Dashboard <span className="mx-1">/</span> Users
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">Users</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-[color:var(--text)]">
+              Users
+            </h1>
+            <p className="text-[color:var(--muted)] mt-1">
               Manage team members and their roles
             </p>
           </div>
@@ -288,11 +293,7 @@ export default function UsersPage(): React.ReactElement {
             =================================================================== */}
 
         {state.error && (
-          <Alert
-            variant="error"
-            title="Error"
-            onDismiss={handleDismissError}
-          >
+          <Alert variant="error" title="Error" onDismiss={handleDismissError}>
             {state.error}
           </Alert>
         )}
@@ -351,12 +352,12 @@ export default function UsersPage(): React.ReactElement {
           <Card>
             <CardBody className="py-16">
               <div className="text-center">
-                <p className="text-lg font-medium text-gray-900 mb-2">
+                <p className="text-lg font-medium text-[color:var(--text)] mb-2">
                   {state.users.length === 0
                     ? "No users found"
                     : "No users match your filters"}
                 </p>
-                <p className="text-gray-600">
+                <p className="text-[color:var(--muted)]">
                   {state.users.length === 0
                     ? "Get started by creating your first user."
                     : "Try adjusting your filters to find what you are looking for."}
@@ -373,25 +374,24 @@ export default function UsersPage(): React.ReactElement {
                     {/* User Header */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">
+                        <h3 className="font-semibold text-[color:var(--text)] truncate">
                           {user.displayName}
                         </h3>
-                        <p className="text-sm text-gray-600 truncate">
+                        <p className="text-sm text-[color:var(--muted)] truncate">
                           @{user.username}
                         </p>
                       </div>
-                      <Badge
-                        variant={getRoleBadgeVariant(user.role)}
-                        size="sm"
-                      >
+                      <Badge variant={getRoleBadgeVariant(user.role)} size="sm">
                         {formatRole(user.role)}
                       </Badge>
                     </div>
 
                     {/* Email */}
-                    <div className="pt-2 border-t border-gray-200">
-                      <p className="text-xs text-gray-500 mb-1">Email</p>
-                      <p className="text-sm text-gray-900 truncate">
+                    <div className="pt-2 border-t border-[color:var(--border)]">
+                      <p className="text-xs text-[color:var(--muted)] mb-1">
+                        Email
+                      </p>
+                      <p className="text-sm text-[color:var(--text)] truncate">
                         {user.email}
                       </p>
                     </div>
@@ -408,8 +408,10 @@ export default function UsersPage(): React.ReactElement {
                         </Badge>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Last Login</p>
-                        <p className="text-sm text-gray-900">
+                        <p className="text-xs text-[color:var(--muted)] mb-1">
+                          Last Login
+                        </p>
+                        <p className="text-sm text-[color:var(--text)]">
                           {user.lastLoginAt
                             ? new Date(user.lastLoginAt).toLocaleDateString(
                                 "en-US",
@@ -425,8 +427,10 @@ export default function UsersPage(): React.ReactElement {
 
                     {/* Joined Date */}
                     <div className="pt-2 border-t border-gray-200">
-                      <p className="text-xs text-gray-500 mb-1">Joined</p>
-                      <p className="text-sm text-gray-900">
+                      <p className="text-xs text-[color:var(--muted)] mb-1">
+                        Joined
+                      </p>
+                      <p className="text-sm text-[color:var(--text)]">
                         {new Date(user.createdAt).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",

@@ -77,11 +77,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       primary:
         "bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed",
       secondary:
-        "border-2 border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-gray-500 disabled:border-gray-200 disabled:text-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed",
+        "border-2 border-[color:var(--border)] text-[color:var(--text)] bg-[color:var(--panel)] hover:bg-[color:var(--glass)] focus-visible:ring-[color:var(--focus)] disabled:border-[color:var(--border)] disabled:text-[color:var(--muted)] disabled:bg-[color:var(--panel)] disabled:cursor-not-allowed",
       danger:
         "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 disabled:bg-red-300 disabled:cursor-not-allowed",
       ghost:
-        "text-gray-700 bg-transparent hover:bg-gray-100 focus-visible:ring-gray-500 disabled:text-gray-400 disabled:cursor-not-allowed",
+        "text-[color:var(--text)] bg-transparent hover:bg-[color:var(--glass)] focus-visible:ring-[color:var(--focus)] disabled:text-[color:var(--muted)] disabled:cursor-not-allowed",
     };
 
     return (

@@ -47,10 +47,12 @@ export default function DashboardLayout({
   // Show full-screen loading state while checking authentication
   if (isAuthLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-[color:var(--bg)]">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" color="primary" />
-          <p className="text-gray-600 text-sm font-medium">Loading...</p>
+          <p className="text-[color:var(--muted)] text-sm font-medium">
+            Loading...
+          </p>
         </div>
       </div>
     );
@@ -60,15 +62,15 @@ export default function DashboardLayout({
   if (!isAuthenticated) {
     router.push("/login");
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <p className="text-gray-600">Redirecting to login...</p>
+      <div className="flex items-center justify-center min-h-screen bg-[color:var(--bg)]">
+        <p className="text-[color:var(--muted)]">Redirecting to login...</p>
       </div>
     );
   }
 
   // Render authenticated dashboard layout
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[color:var(--bg)]">
       {/* Sidebar - controlled state for mobile */}
       <Sidebar
         isOpen={isMobileSidebarOpen}
