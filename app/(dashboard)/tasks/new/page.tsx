@@ -476,10 +476,10 @@ export default function NewTaskPage(): React.ReactElement {
             HELP TEXT
             =================================================================== */}
 
-        <Card className="bg-blue-50 border-blue-200">
-          <CardBody className="text-sm text-blue-900">
+        <Card className="bg-blue-50 border-slate-200">
+          <CardBody className="text-sm text-slate-200">
             <p className="font-medium mb-2">Task Creation Guide</p>
-            <ul className="space-y-1 list-disc list-inside text-blue-800">
+            <ul className="space-y-1 list-disc list-inside text-slate-300">
               <li>Title is required and must be at least 3 characters</li>
               <li>Description is optional but recommended for clarity</li>
               <li>Priority defaults to Medium if not specified</li>
