@@ -48,26 +48,26 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
   ) => {
     // Variant styles with background and text colors
     const variantMap: Record<string, string> = {
-      success: "bg-green-50 border-l-4 border-green-500 text-green-800",
-      error: "bg-red-50 border-l-4 border-red-500 text-red-800",
-      warning: "bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800",
-      info: "bg-blue-50 border-l-4 border-blue-500 text-blue-800",
+      success: "bg-green-900/20 border-l-4 border-green-500 text-green-400",
+      error: "bg-red-900/20 border-l-4 border-red-500 text-red-400",
+      warning: "bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-400",
+      info: "bg-blue-900/20 border-l-4 border-blue-500 text-blue-400",
     };
 
     // Icon background colors
     const iconBgMap: Record<string, string> = {
-      success: "bg-green-200 text-green-800",
-      error: "bg-red-200 text-red-800",
-      warning: "bg-yellow-200 text-yellow-800",
-      info: "bg-blue-200 text-blue-800",
+      success: "bg-green-800/30 text-green-400",
+      error: "bg-red-800/30 text-red-400",
+      warning: "bg-yellow-800/30 text-yellow-400",
+      info: "bg-blue-800/30 text-blue-400",
     };
 
     // Dismiss button colors
     const dismissBgMap: Record<string, string> = {
-      success: "hover:bg-green-100 text-green-600",
-      error: "hover:bg-red-100 text-red-600",
-      warning: "hover:bg-yellow-100 text-yellow-600",
-      info: "hover:bg-blue-100 text-blue-600",
+      success: "hover:bg-green-800/30 text-green-400",
+      error: "hover:bg-red-800/30 text-red-400",
+      warning: "hover:bg-yellow-800/30 text-yellow-400",
+      info: "hover:bg-blue-800/30 text-blue-400",
     };
 
     // eslint-disable-next-line security/detect-object-injection

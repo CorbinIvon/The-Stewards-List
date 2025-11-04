@@ -24,10 +24,10 @@ export default function AuthLayout({
   // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-[color:var(--bg)]">
         <div className="flex flex-col items-center justify-center">
           <svg
-            className="animate-spin h-12 w-12 text-blue-600"
+            className="animate-spin h-12 w-12 text-blue-400"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -46,21 +46,21 @@ export default function AuthLayout({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-[color:var(--text)]">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[color:var(--bg)] px-4 py-12">
       <div className="w-full max-w-[400px]">
         {/* App Logo/Branding */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-[color:var(--text)]">
             The Stewards List
           </h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-[color:var(--muted)]">
             Home organization made simple
           </p>
         </div>

@@ -66,8 +66,9 @@ A Next.js + Prisma web application for home organization featuring user manageme
 
 ### Prerequisites
 
-- Node.js 18+ installed
+- Node.js 20+ installed - `nvm install 20; nvm use 20`
 - npm or yarn package manager
+- Docker (for local db)
 
 ### Installation
 
@@ -84,19 +85,26 @@ cd The-Stewards-List
 npm install
 ```
 
-3. Set up the database:
+3. Set up Prisma
+
+```bash
+npm install prisma -g
+npx prisma migrate
+```
+
+4. Set up the database:
 
 ```bash
 npm run db:push
 ```
 
-4. Run the development server:
+5. Run the development server:
 
 ```bash
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Available Scripts
 

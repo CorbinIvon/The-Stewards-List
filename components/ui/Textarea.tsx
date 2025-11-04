@@ -75,13 +75,13 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     // Border and focus styles
     const textareaBorderStyles = error
-      ? "border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500"
-      : "border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
+      ? "border-red-500 focus:border-red-400 focus:ring-1 focus:ring-red-400"
+      : "border-[color:var(--border)] focus:border-blue-400 focus:ring-1 focus:ring-blue-400";
 
     // Disabled state
     const textareaDisabledStyles = disabled
-      ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-      : "bg-white text-gray-900 placeholder:text-gray-500";
+      ? "bg-[color:var(--panel)] text-[color:var(--muted)] cursor-not-allowed"
+      : "bg-[color:var(--panel)] text-[color:var(--text)] placeholder:text-[color:var(--muted)]";
 
     const textareaClassName = cn(
       textareaBaseStyles,
@@ -98,12 +98,14 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             htmlFor={id}
             className={cn(
               "text-sm font-medium",
-              required ? "text-gray-900" : "text-gray-700",
-              disabled ? "text-gray-500" : ""
+              required
+                ? "text-[color:var(--text)]"
+                : "text-[color:var(--text)]",
+              disabled ? "text-[color:var(--muted)]" : ""
             )}
           >
             {label}
-            {required && <span className="ml-1 text-red-600">*</span>}
+            {required && <span className="ml-1 text-red-400">*</span>}
           </label>
         )}
         <textarea
@@ -119,12 +121,14 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           maxLength={maxLength}
           className={textareaClassName}
           aria-invalid={!!error}
-          aria-describedby={error ? errorId : showCharCount ? countId : undefined}
+          aria-describedby={
+            error ? errorId : showCharCount ? countId : undefined
+          }
           {...props}
         />
         <div className="flex flex-col gap-1">
           {error && (
-            <p id={errorId} className="text-sm text-red-600">
+            <p id={errorId} className="text-sm text-red-400">
               {error}
             </p>
           )}
@@ -134,8 +138,8 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
               className={cn(
                 "text-xs text-right",
                 currentLength > maxLength * 0.9
-                  ? "text-orange-600 font-medium"
-                  : "text-gray-500"
+                  ? "text-orange-400 font-medium"
+                  : "text-[color:var(--muted)]"
               )}
             >
               {currentLength}/{maxLength}

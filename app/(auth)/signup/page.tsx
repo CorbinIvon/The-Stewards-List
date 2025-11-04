@@ -171,8 +171,10 @@ export default function SignupPage(): React.ReactElement {
     <div className="space-y-6">
       {/* Page Title */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Create account</h2>
-        <p className="mt-1 text-sm text-gray-600">
+        <h2 className="text-2xl font-bold text-[color:var(--text)]">
+          Create account
+        </h2>
+        <p className="mt-1 text-sm text-[color:var(--muted)]">
           Join The Stewards List to get started
         </p>
       </div>
@@ -181,7 +183,7 @@ export default function SignupPage(): React.ReactElement {
       {error && (
         <div
           role="alert"
-          className="rounded-lg bg-red-50 p-4 text-sm text-red-800 border border-red-200"
+          className="rounded-lg bg-red-900/20 p-4 text-sm text-red-400 border border-red-800/30"
         >
           <p className="font-medium">Signup failed</p>
           <p className="mt-1">{error}</p>
@@ -242,7 +244,7 @@ export default function SignupPage(): React.ReactElement {
             required
           />
           {!errors.password && (
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-[color:var(--muted)]">
               At least 8 characters with uppercase, lowercase, and numbers
             </p>
           )}
@@ -273,11 +275,11 @@ export default function SignupPage(): React.ReactElement {
 
       {/* Login Link */}
       <div className="text-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-[color:var(--muted)]">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
+            className="font-medium text-blue-400 hover:text-blue-300 transition-colors"
           >
             Sign in
           </Link>

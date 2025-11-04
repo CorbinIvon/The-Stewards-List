@@ -463,7 +463,7 @@ export default function TasksPage(): React.ReactElement {
           <CardBody>
             <div className="flex flex-col items-center gap-4">
               <div className="text-5xl">📋</div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-white">
                 {state.tasks.length === 0
                   ? "No tasks yet"
                   : "No tasks match your filters"}

@@ -141,8 +141,8 @@ export default function LoginPage(): React.ReactElement {
     <div className="space-y-6">
       {/* Page Title */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">Sign in</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="text-2xl font-bold text-[color:var(--text)]">Sign in</h1>
+        <p className="mt-1 text-sm text-[color:var(--muted)]">
           Welcome back to The Stewards List
         </p>
       </div>
@@ -198,11 +198,11 @@ export default function LoginPage(): React.ReactElement {
 
       {/* Signup Link */}
       <div className="text-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-[color:var(--muted)]">
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
-            className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
+            className="font-medium text-blue-400 hover:text-blue-300 transition-colors"
           >
             Sign up
           </Link>
