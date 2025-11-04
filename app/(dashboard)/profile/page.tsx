@@ -331,17 +331,7 @@ export default function ProfilePage(): React.ReactElement {
   // Main profile render
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-8">
-      {/* ===================================================================
-          BREADCRUMB NAVIGATION
-          =================================================================== */}
-
-      <div className="flex items-center gap-2 text-sm text-slate-400">
-        <Link href="/dashboard" className="hover:text-blue-600">
-          Dashboard
-        </Link>
-        <span>/</span>
-        <span className="text-slate-100 font-medium">Profile</span>
-      </div>
+      {/* Breadcrumb removed - keeping page title and content only */}
 
       {/* ===================================================================
           ERROR ALERT

@@ -267,9 +267,6 @@ export default function UsersPage(): React.ReactElement {
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-sm text-[color:var(--muted)] mb-2">
-              Dashboard <span className="mx-1">/</span> Users
-            </div>
             <h1 className="text-3xl font-bold text-[color:var(--text)]">
               Users
             </h1>

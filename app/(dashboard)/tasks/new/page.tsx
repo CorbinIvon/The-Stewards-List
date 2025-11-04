@@ -334,17 +334,7 @@ export default function NewTaskPage(): React.ReactElement {
             BREADCRUMB NAVIGATION
             =================================================================== */}
 
-        <div className="flex items-center gap-2 text-sm">
-          <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">
-            Dashboard
-          </Link>
-          <span className="text-gray-400">/</span>
-          <Link href="/tasks" className="text-blue-600 hover:text-blue-700">
-            Tasks
-          </Link>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-700">New Task</span>
-        </div>
+        {/* Breadcrumb removed above page header */}
 
         {/* ===================================================================
             ERROR ALERT

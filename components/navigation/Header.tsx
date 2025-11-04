@@ -20,48 +20,6 @@ interface HeaderProps {
 }
 
 /**
- * Route configuration for breadcrumb generation
- */
-interface RouteConfig {
-  label: string;
-  href: string;
-}
-
-/**
- * Generate breadcrumb items from current path
- */
-const generateBreadcrumbs = (pathname: string): RouteConfig[] => {
-  const routeMap: Record<string, string> = {
-    "": "Dashboard",
-    dashboard: "Dashboard",
-    tasks: "Tasks",
-    settings: "Settings",
-    profile: "Profile",
-    users: "Users",
-    reports: "Reports",
-  };
-
-  const segments = pathname
-    .split("/")
-    .filter((segment) => segment && segment !== "dashboard");
-
-  const breadcrumbs: RouteConfig[] = [
-    { label: "Dashboard", href: "/dashboard" },
-  ];
-
-  let currentPath = "/dashboard";
-  segments.forEach((segment) => {
-    currentPath += `/${segment}`;
-    // eslint-disable-next-line security/detect-object-injection
-    const label =
-      routeMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
-    breadcrumbs.push({ label, href: currentPath });
-  });
-
-  return breadcrumbs;
-};
-
-/**
  * Get role badge color
  */
 const getRoleBadgeColor = (
@@ -125,12 +83,25 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
     );
     const [focusedItemIndex, setFocusedItemIndex] = useState<number>(-1);
 
-    const breadcrumbs = generateBreadcrumbs(pathname);
-    const pageTitle =
-      title ||
-      (breadcrumbs.length > 0
-        ? breadcrumbs[breadcrumbs.length - 1]?.label
-        : "Dashboard");
+    // Generate page title from pathname if no custom title provided
+    const getPageTitle = (path: string): string => {
+      if (title) return title;
+
+      const segments = path.split("/").filter(Boolean);
+      const lastSegment = segments[segments.length - 1];
+
+      if (!lastSegment || lastSegment === "dashboard") {
+        return "Dashboard";
+      }
+
+      // Convert kebab-case or snake_case to Title Case
+      return lastSegment
+        .split(/[-_]/)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    };
+
+    const pageTitle = getPageTitle(pathname);
 
     /**
      * Handle logout with navigation
@@ -287,53 +258,11 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                 </button>
               )}
 
-              {/* Breadcrumbs or title */}
+              {/* Page title */}
               <div className="flex-1 min-w-0">
-                {breadcrumbs.length <= 2 ? (
-                  <h1 className="text-xl font-semibold text-[color:var(--text)] truncate">
-                    {pageTitle}
-                  </h1>
-                ) : (
-                  <nav aria-label="Breadcrumb" className="flex items-center">
-                    <ol className="flex flex-wrap items-center gap-2">
-                      {breadcrumbs.map((crumb, index) => (
-                        <li
-                          key={crumb.href}
-                          className="flex items-center gap-2"
-                        >
-                          {index > 0 && (
-                            <svg
-                              className="w-4 h-4 text-[color:var(--muted)]"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
-                          )}
-                          {index === breadcrumbs.length - 1 ? (
-                            <span className="text-sm font-medium text-[color:var(--text)] truncate">
-                              {crumb.label}
-                            </span>
-                          ) : (
-                            <Link
-                              href={crumb.href}
-                              className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors truncate"
-                            >
-                              {crumb.label}
-                            </Link>
-                          )}
-                        </li>
-                      ))}
-                    </ol>
-                  </nav>
-                )}
+                <h1 className="text-xl font-semibold text-[color:var(--text)] truncate">
+                  {pageTitle}
+                </h1>
               </div>
             </div>
 

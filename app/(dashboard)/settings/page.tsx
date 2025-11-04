@@ -176,12 +176,7 @@ export default function SettingsPage(): React.ReactElement {
       {/* Header and Breadcrumb */}
       <div className="border-b border-slate-700 bg-slate-800">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          {/* Breadcrumb */}
-          <div className="mb-4 text-sm text-slate-400">
-            <span>Dashboard</span>
-            <span className="mx-2">/</span>
-            <span className="font-semibold text-slate-100">Settings</span>
-          </div>
+          {/* Breadcrumb removed - page header only */}
 
           <h1 className="text-3xl font-bold text-slate-100">Settings</h1>
           <p className="mt-1 text-slate-400">
