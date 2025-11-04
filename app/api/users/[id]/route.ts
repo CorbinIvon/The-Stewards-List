@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireOwnerOrRole, requireRole, isAdmin } from "@/lib/middleware/auth";
+import {
+  requireAuth,
+  requireOwnerOrRole,
+  requireRole,
+  isAdmin,
+} from "@/lib/middleware/auth";
 import type { UserPublic, UserRole, ApiResponse, AuthUser } from "@/lib/types";
 
 // ============================================================================
@@ -50,6 +55,19 @@ const userSelect = {
  */
 const VALID_ROLES: UserRole[] = ["ADMIN", "MANAGER", "MEMBER"];
 
+/**
+ * Resolve an id from params which may be a plain object or a Promise
+ */
+async function resolveId(params: any): Promise<string | undefined> {
+  if (!params) return undefined;
+  // If params is a Promise (some caller might pass a Promise), await it
+  if (typeof params.then === "function") {
+    const resolved = await params;
+    return resolved?.id;
+  }
+  return params.id;
+}
+
 // ============================================================================
 // VALIDATION HELPERS
 // ============================================================================
@@ -86,7 +104,10 @@ function isValidDisplayName(displayName: string): boolean {
  * Returns validation errors if any field is invalid
  * Enforces role-based restrictions (only admins can update role/isActive)
  */
-function validateUserUpdate(body: any, requestingUser: AuthUser): ValidationResult {
+function validateUserUpdate(
+  body: any,
+  requestingUser: AuthUser
+): ValidationResult {
   const errors: string[] = [];
   const userIsAdmin = isAdmin(requestingUser);
 
@@ -104,7 +125,9 @@ function validateUserUpdate(body: any, requestingUser: AuthUser): ValidationResu
     if (typeof body.username !== "string") {
       errors.push("Username must be a string");
     } else if (!isValidUsername(body.username)) {
-      errors.push("Username must be 3-32 characters and contain only letters, numbers, underscores, and hyphens");
+      errors.push(
+        "Username must be 3-32 characters and contain only letters, numbers, underscores, and hyphens"
+      );
     }
   }
 
@@ -164,9 +187,22 @@ export async function GET(
     const auth = await requireAuth(request);
     if (auth instanceof NextResponse) return auth;
 
+    // Resolve id from params
+    const id = await resolveId(params);
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Missing user id",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 }
+      );
+    }
+
     // Fetch user by ID
     const user = await prisma.user.findUnique({
-      where: { id: id },
+      where: { id },
       select: userSelect,
     });
 
@@ -233,6 +269,19 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Resolve id from params
+    const id = await resolveId(params);
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Missing user id",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 }
+      );
+    }
+
     // Require ownership or admin role
     const auth = await requireOwnerOrRole(request, id, ["ADMIN"]);
     if (auth instanceof NextResponse) return auth;
@@ -304,7 +353,7 @@ export async function PATCH(
 
     // Update user
     const updatedUser = await prisma.user.update({
-      where: { id: id },
+      where: { id },
       data: updateData,
       select: userSelect,
     });
@@ -327,8 +376,8 @@ export async function PATCH(
         field === "email"
           ? "Email already exists"
           : field === "username"
-            ? "Username already exists"
-            : "Unique constraint violated";
+          ? "Username already exists"
+          : "Unique constraint violated";
 
       return NextResponse.json(
         {
@@ -390,6 +439,19 @@ export async function DELETE(
     if (auth instanceof NextResponse) return auth;
     const { user: requestingUser } = auth;
 
+    // Resolve id from params
+    const id = await resolveId(params);
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Missing user id",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 }
+      );
+    }
+
     // Prevent admin from deleting themselves
     if (requestingUser.id === id) {
       return NextResponse.json(
@@ -404,7 +466,7 @@ export async function DELETE(
 
     // Verify user exists before attempting soft delete
     const userExists = await prisma.user.findUnique({
-      where: { id: id },
+      where: { id },
       select: { id: true },
     });
 
@@ -421,7 +483,7 @@ export async function DELETE(
 
     // Soft delete - set isActive to false
     await prisma.user.update({
-      where: { id: id },
+      where: { id },
       data: { isActive: false },
     });
 
