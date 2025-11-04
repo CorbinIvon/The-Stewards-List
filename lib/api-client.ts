@@ -394,6 +394,23 @@ class ApiClient {
     await this.delete(`/api/users/${userId}`);
   }
 
+  /**
+   * Create a new user (admin only)
+   */
+  async createUser(request: {
+    email: string;
+    username: string;
+    displayName: string;
+    password: string;
+    role?: string;
+  }): Promise<UserPublic> {
+    const response = await this.post<ApiResponse<UserPublic>>(
+      "/api/users",
+      request
+    );
+    return response.data;
+  }
+
   // ========================================================================
   // TASK ENDPOINTS
   // ========================================================================
