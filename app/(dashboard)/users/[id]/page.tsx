@@ -37,7 +37,8 @@ import Alert from "@/components/ui/Alert";
 import { useAuth } from "@/lib/auth-context";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import { formatDate, formatDateTime, toTitleCase } from "@/lib/utils";
-import type { UserPublic, UserRole } from "@/lib/types";
+import type { UserPublic } from "@/lib/types";
+import { UserRole } from "@/lib/types";
 
 // ============================================================================
 // TYPES
@@ -81,9 +82,9 @@ interface PageState {
 // ============================================================================
 
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
-  { value: "ADMIN", label: "Admin" },
-  { value: "MANAGER", label: "Manager" },
-  { value: "MEMBER", label: "Member" },
+  { value: UserRole.ADMIN, label: "Admin" },
+  { value: UserRole.MANAGER, label: "Manager" },
+  { value: UserRole.MEMBER, label: "Member" },
 ];
 
 const STATUS_OPTIONS = [
@@ -259,12 +260,15 @@ export default function UserDetailPage({
   const [formData, setFormData] = useState<FormState>({
     displayName: "",
     email: "",
-    role: "MEMBER",
+    role: UserRole.MEMBER,
     isActive: true,
   });
 
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showTempPasswordModal, setShowTempPasswordModal] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
 
   const canEdit =
     currentUser && canEditUser(pageState.user, currentUser) ? true : false;
@@ -371,14 +375,15 @@ export default function UserDetailPage({
         ...prev,
         isActive: value === "true",
       }));
-    } else if (name === "role") {
+    }
+    if (name === "role") {
       // Validate role change
       if (
         currentUser &&
         !canChangeRole(
           currentUser.role,
           value as UserRole,
-          pageState.user?.role || "MEMBER"
+          (pageState.user?.role as UserRole) || UserRole.MEMBER
         )
       ) {
         setPageState((prev) => ({
@@ -389,13 +394,11 @@ export default function UserDetailPage({
       }
       setFormData((prev) => ({
         ...prev,
-        [name]: value,
+        role: value as UserRole,
       }));
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+      // Generic assignment for other fields; cast to FormState for TS
+      setFormData((prev) => ({ ...(prev as any), [name]: value } as FormState));
     }
 
     // Clear error for this field when user starts editing
@@ -779,6 +782,16 @@ export default function UserDetailPage({
                   Delete User
                 </Button>
               )}
+              {currentUser?.role === "ADMIN" && userId !== currentUser?.id && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  disabled={pageState.isSubmitting}
+                  onClick={() => setShowResetConfirm(true)}
+                >
+                  Reset Password
+                </Button>
+              )}
             </div>
           </form>
         </CardBody>
@@ -867,6 +880,107 @@ export default function UserDetailPage({
             <p className="text-sm text-red-800">
               <strong>Email:</strong> {pageState.user?.email}
             </p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reset Password Confirmation Modal */}
+      <Modal
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        title="Reset Password"
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setShowResetConfirm(false)}
+              disabled={pageState.isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                try {
+                  setPageState((prev) => ({
+                    ...prev,
+                    isSubmitting: true,
+                    error: null,
+                  }));
+                  const result = await apiClient.resetUserPassword(userId);
+                  setTempPassword(result.tempPassword);
+                  setShowResetConfirm(false);
+                  setShowTempPasswordModal(true);
+                } catch (err) {
+                  const errorMessage =
+                    err instanceof ApiClientError
+                      ? err.message
+                      : err instanceof Error
+                      ? err.message
+                      : "Failed to reset password";
+                  setPageState((prev) => ({ ...prev, error: errorMessage }));
+                } finally {
+                  setPageState((prev) => ({ ...prev, isSubmitting: false }));
+                }
+              }}
+              disabled={pageState.isSubmitting}
+            >
+              Reset Password
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="font-semibold">
+            You are about to reset this user's password.
+          </p>
+          <p className="text-sm text-gray-600">
+            A temporary password will be generated and the user will be required
+            to set a new password at next login. Continue?
+          </p>
+        </div>
+      </Modal>
+
+      {/* Temporary Password Modal (shown after reset) */}
+      <Modal
+        isOpen={showTempPasswordModal}
+        onClose={() => {
+          setShowTempPasswordModal(false);
+          setTempPassword(null);
+        }}
+        title="Temporary Password"
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowTempPasswordModal(false);
+                setTempPassword(null);
+              }}
+            >
+              Close
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                // Copy to clipboard
+                if (tempPassword) navigator.clipboard.writeText(tempPassword);
+              }}
+            >
+              Copy Password
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm">
+            Provide the temporary password below to the user. They will be
+            prompted to change it on next login.
+          </p>
+          <div className="rounded bg-slate-800 p-3 font-mono text-sm">
+            {tempPassword}
           </div>
         </div>
       </Modal>

@@ -88,6 +88,7 @@ export interface User {
   displayName: string;
   passwordHash: string;
   role: UserRole;
+  requiresPasswordReset?: boolean;
   isActive: boolean;
   lastLoginAt: Date | null;
 }
@@ -281,6 +282,7 @@ export interface AuthUser {
   username: string;
   role: UserRole;
   isActive: boolean;
+  requiresPasswordReset?: boolean;
   iat?: number; // issued at
   exp?: number; // expiration time
 }

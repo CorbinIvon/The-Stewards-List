@@ -5,8 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { extractTokenFromHeader, getUserFromToken } from "@/lib/auth";
+import {
+  extractTokenFromHeader,
+  extractTokenFromCookie,
+  getUserFromToken,
+} from "@/lib/auth";
 import type { AuthUser, UserRole } from "@/lib/types";
+import { prisma } from "@/lib/prisma";
 
 // ============================================================================
 // TYPES
@@ -39,18 +44,27 @@ export async function getUserFromRequest(
   request: NextRequest
 ): Promise<AuthUser | null> {
   try {
+    // First try Authorization header (Bearer token)
     const authHeader = request.headers.get("authorization");
-    if (!authHeader) {
-      return null;
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const user = await getUserFromToken(token);
+        if (user) return user;
+      }
     }
 
-    const token = extractTokenFromHeader(authHeader);
-    if (!token) {
-      return null;
+    // Fallback to cookie-based token (authToken cookie)
+    const cookieHeader = request.headers.get("cookie");
+    if (cookieHeader) {
+      const token = extractTokenFromCookie(cookieHeader);
+      if (token) {
+        const user = await getUserFromToken(token);
+        if (user) return user;
+      }
     }
 
-    const user = await getUserFromToken(token);
-    return user;
+    return null;
   } catch (error) {
     console.error("Error extracting user from request:", error);
     return null;
@@ -84,6 +98,38 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
       { success: false, error: "Authentication required" },
       { status: 401 }
     );
+  }
+
+  // If user is required to reset password, block access to most routes.
+  // Allow the password-complete endpoint so the user can set a new password.
+  try {
+    const pathname = request.nextUrl?.pathname;
+    const isCompleteResetApi = pathname === "/api/auth/complete-reset";
+
+    if ((user as any).requiresPasswordReset && !isCompleteResetApi) {
+      // Double-check the DB in case the user has just completed the reset
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+        // If DB says reset is no longer required, allow access.
+        if (dbUser && !(dbUser as any).requiresPasswordReset) {
+          // proceed
+        } else {
+          return NextResponse.json(
+            { success: false, error: "Password reset required" },
+            { status: 403 }
+          );
+        }
+      } catch (dbErr) {
+        console.error("requireAuth: error checking DB for reset flag", dbErr);
+        return NextResponse.json(
+          { success: false, error: "Password reset required" },
+          { status: 403 }
+        );
+      }
+    }
+  } catch (e) {
+    // If nextUrl isn't available for some reason, don't block (fail open)
+    console.error("requireAuth: error checking nextUrl", e);
   }
 
   return { user };

@@ -2,7 +2,11 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useIsAuthenticated, useAuthLoading } from "@/lib/auth-context";
+import {
+  useIsAuthenticated,
+  useAuthLoading,
+  useAuth,
+} from "@/lib/auth-context";
 import { Card } from "@/components/ui";
 
 export default function AuthLayout({
@@ -11,15 +15,19 @@ export default function AuthLayout({
   children: React.ReactNode;
 }): React.ReactElement {
   const router = useRouter();
+  const { user } = useAuth();
   const isAuthenticated = useIsAuthenticated();
   const isLoading = useAuthLoading();
 
   // Redirect to dashboard if user is already authenticated
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
+    // If the user is authenticated and not required to reset password,
+    // send them to the dashboard. If they are required to reset password
+    // we must not redirect so they can complete the reset flow.
+    if (isAuthenticated && !isLoading && !user?.requiresPasswordReset) {
       router.push("/dashboard");
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user?.requiresPasswordReset, router]);
 
   // Show loading state while checking authentication
   if (isLoading) {

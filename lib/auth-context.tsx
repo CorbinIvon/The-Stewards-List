@@ -70,7 +70,9 @@ interface AuthProviderProps {
  * </AuthProvider>
  * ```
  */
-export function AuthProvider({ children }: AuthProviderProps): React.ReactElement {
+export function AuthProvider({
+  children,
+}: AuthProviderProps): React.ReactElement {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +96,9 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactElemen
             username: currentUser.username,
             role: currentUser.role,
             isActive: currentUser.isActive,
+            // preserve server flag so UI can react (e.g. force complete-reset flow)
+            requiresPasswordReset:
+              (currentUser as any).requiresPasswordReset ?? false,
           });
         } catch (err) {
           // No valid token or token expired - user is not authenticated
@@ -121,35 +126,40 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactElemen
    * Handle user login
    * Validates credentials and stores authentication token
    */
-  const login = useCallback(async (credentials: LoginRequest): Promise<void> => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const login = useCallback(
+    async (credentials: LoginRequest): Promise<void> => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const response: LoginResponse = await apiClient.login(credentials);
+        const response: LoginResponse = await apiClient.login(credentials);
 
-      setUser({
-        id: response.user.id,
-        email: response.user.email,
-        username: response.user.username,
-        role: response.user.role,
-        isActive: response.user.isActive,
-      });
-    } catch (err) {
-      const message =
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
+        setUser({
+          id: response.user.id,
+          email: response.user.email,
+          username: response.user.username,
+          role: response.user.role,
+          isActive: response.user.isActive,
+          requiresPasswordReset:
+            (response.user as any).requiresPasswordReset ?? false,
+        });
+      } catch (err) {
+        const message =
+          err instanceof ApiClientError
+            ? err.message
+            : err instanceof Error
             ? err.message
             : "Login failed";
 
-      setError(message);
-      setUser(null);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+        setError(message);
+        setUser(null);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
   /**
    * Handle user signup
@@ -168,14 +178,16 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactElemen
         username: response.user.username,
         role: response.user.role,
         isActive: response.user.isActive,
+        requiresPasswordReset:
+          (response.user as any).requiresPasswordReset ?? false,
       });
     } catch (err) {
       const message =
         err instanceof ApiClientError
           ? err.message
           : err instanceof Error
-            ? err.message
-            : "Signup failed";
+          ? err.message
+          : "Signup failed";
 
       setError(message);
       setUser(null);
@@ -217,11 +229,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactElemen
     clearError,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 // ============================================================================

@@ -61,6 +61,22 @@ export class ApiClientError extends Error {
   }
 }
 
+/**
+ * Specific error thrown when the server requires the user to complete a
+ * password reset flow (admin forced reset). UI can catch this and redirect
+ * or show a dedicated flow.
+ */
+export class PasswordResetRequiredError extends ApiClientError {
+  constructor(
+    message = "Password reset required",
+    status = 403,
+    details?: unknown
+  ) {
+    super(message, status, details);
+    this.name = "PasswordResetRequiredError";
+  }
+}
+
 // ============================================================================
 // API CLIENT CLASS
 // ============================================================================
@@ -192,6 +208,35 @@ class ApiClient {
 
       if (!response.ok) {
         // Handle specific error cases
+        // If the server indicates the user must complete a password reset,
+        // surface a specific error so UI can react (redirect to complete-reset page).
+        const serverMessage = data?.error || null;
+        if (
+          response.status === 403 &&
+          serverMessage === "Password reset required"
+        ) {
+          if (typeof window !== "undefined") {
+            // Avoid redirecting if we're already on the complete-reset UI to
+            // prevent redirect loops. The actual UI lives at `/complete-reset`
+            // (app group `(auth)`), and we also support `/auth/complete-reset`
+            // as a compatibility redirect path.
+            try {
+              const currentPath = window.location.pathname;
+              const resetPaths = ["/complete-reset", "/auth/complete-reset"];
+              if (!resetPaths.includes(currentPath)) {
+                window.location.href = "/auth/complete-reset";
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+          throw new PasswordResetRequiredError(
+            serverMessage,
+            response.status,
+            data?.details
+          );
+        }
+
         if (response.status === 401) {
           this.clearToken();
           if (typeof window !== "undefined") {
@@ -407,6 +452,16 @@ class ApiClient {
     const response = await this.post<ApiResponse<UserPublic>>(
       "/api/users",
       request
+    );
+    return response.data;
+  }
+
+  /**
+   * Reset a user's password (admin only). Returns the temporary password.
+   */
+  async resetUserPassword(userId: string): Promise<{ tempPassword: string }> {
+    const response = await this.post<ApiResponse<{ tempPassword: string }>>(
+      `/api/users/${userId}/reset-password`
     );
     return response.data;
   }

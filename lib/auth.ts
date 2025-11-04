@@ -405,6 +405,7 @@ export function createAuthUserFromUser(user: User): AuthUser {
     username: user.username,
     role: user.role,
     isActive: user.isActive,
+    requiresPasswordReset: (user as any).requiresPasswordReset || false,
   };
 }
 

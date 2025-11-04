@@ -43,7 +43,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  */
 export default function LoginPage(): React.ReactElement {
   const router = useRouter();
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
+  const { login, isLoading, error, clearError, isAuthenticated, user } =
+    useAuth();
 
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
@@ -57,9 +58,14 @@ export default function LoginPage(): React.ReactElement {
   // Redirect if user becomes authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      // If user must reset password, redirect to the forced reset flow
+      if ((user as any)?.requiresPasswordReset) {
+        router.push("/auth/complete-reset");
+        return;
+      }
       router.push("/dashboard");
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, user]);
 
   /**
    * Validate form fields
