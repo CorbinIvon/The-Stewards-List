@@ -3,6 +3,7 @@
  * Handles password hashing, JWT token generation/verification, and auth checks
  */
 
+import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { config } from "./config";
 import type { AuthUser, User } from "./types";
@@ -422,5 +423,259 @@ export function isTokenAboutToExpire(token: string): boolean {
     return expiresIn < 60 * 60; // Less than 1 hour
   } catch {
     return true;
+  }
+}
+
+// ============================================================================
+// REFRESH TOKEN MANAGEMENT AND REVOCATION
+// ============================================================================
+
+/**
+ * Hash a refresh token for secure storage
+ * Uses bcrypt for consistency with password handling
+ *
+ * @param token - The plaintext refresh token
+ * @returns The hashed token
+ * @throws Error if hashing fails
+ */
+export async function hashRefreshToken(token: string): Promise<string> {
+  try {
+    const salt = await bcrypt.genSalt(config.security.bcrypt.rounds);
+    return bcrypt.hash(token, salt);
+  } catch (error) {
+    throw new Error(
+      `Failed to hash refresh token: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+}
+
+/**
+ * Check if a refresh token is revoked in the database
+ * Helper function to verify token revocation status
+ *
+ * @param tokenHash - The hashed token to check
+ * @returns true if token is revoked, false otherwise
+ */
+export async function checkIfTokenRevoked(tokenHash: string): Promise<boolean> {
+  try {
+    const { prisma } = await import("./prisma");
+
+    const refreshToken = await prisma.refreshToken.findUnique({
+      where: { token: tokenHash },
+      select: { revokedAt: true },
+    });
+
+    return refreshToken?.revokedAt !== null && refreshToken?.revokedAt !== undefined;
+  } catch (error) {
+    console.error("Error checking token revocation status:", error);
+    // Fail open in case of database error - allow the token
+    return false;
+  }
+}
+
+/**
+ * Revoke a refresh token by marking it as revoked
+ * Sets revokedAt timestamp to invalidate the token
+ *
+ * @param tokenHash - The hashed refresh token to revoke
+ * @returns true if successfully revoked, false if token not found
+ * @throws Error if database operation fails
+ */
+export async function revokeRefreshToken(tokenHash: string): Promise<boolean> {
+  try {
+    const { prisma } = await import("./prisma");
+
+    const result = await prisma.refreshToken.update({
+      where: { token: tokenHash },
+      data: { revokedAt: new Date() },
+    });
+
+    return !!result;
+  } catch (error) {
+    // Token not found or already revoked - gracefully continue
+    if (
+      error instanceof Error &&
+      error.message.includes("Record to update not found")
+    ) {
+      return false;
+    }
+
+    console.error("Error revoking refresh token:", error);
+    throw new Error(
+      `Failed to revoke refresh token: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+}
+
+/**
+ * Verify a refresh token and check if it's revoked
+ * Performs all validation: signature, expiration, and revocation status
+ *
+ * @param plainToken - The plaintext refresh token to verify
+ * @returns The decoded AuthUser payload if valid
+ * @throws Error with specific message if token is invalid, expired, or revoked
+ */
+export async function verifyRefreshToken(
+  plainToken: string
+): Promise<AuthUser> {
+  try {
+    // Hash the token to look it up in database
+    const tokenHash = await hashRefreshToken(plainToken);
+
+    // Check if token is revoked
+    const isRevoked = await checkIfTokenRevoked(tokenHash);
+    if (isRevoked) {
+      throw new Error("Token revoked, please login again");
+    }
+
+    // Verify the JWT token itself
+    const user = await verifyToken(plainToken);
+    return user;
+  } catch (error) {
+    throw new Error(
+      `Failed to verify refresh token: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+}
+
+/**
+ * Extract both access and refresh tokens from a request
+ * Checks cookies first, then request body, then Authorization header
+ *
+ * @param request - The NextRequest object
+ * @returns Object with accessToken and refreshToken (both optional)
+ */
+export async function getTokenFromRequest(
+  request: NextRequest
+): Promise<{ accessToken?: string; refreshToken?: string }> {
+  try {
+    const cookieHeader = request.headers.get("cookie");
+    const authHeader = request.headers.get("authorization");
+
+    const tokens: { accessToken?: string; refreshToken?: string } = {};
+
+    // Extract access token from cookies or Authorization header
+    const accessTokenFromCookie = extractTokenFromCookie(cookieHeader);
+    if (accessTokenFromCookie) {
+      tokens.accessToken = accessTokenFromCookie;
+    } else {
+      const accessTokenFromHeader = extractTokenFromHeader(authHeader);
+      if (accessTokenFromHeader) {
+        tokens.accessToken = accessTokenFromHeader;
+      }
+    }
+
+    // Extract refresh token from cookies first
+    const refreshTokenFromCookie = extractRefreshTokenFromCookie(cookieHeader);
+    if (refreshTokenFromCookie) {
+      tokens.refreshToken = refreshTokenFromCookie;
+    } else {
+      // Try to get from request body for mobile clients
+      try {
+        const body = await request.json();
+        if (body.refreshToken) {
+          tokens.refreshToken = body.refreshToken;
+        }
+      } catch {
+        // Body is not JSON or cannot be parsed, continue
+      }
+    }
+
+    return tokens;
+  } catch (error) {
+    console.error("Error extracting tokens from request:", error);
+    return {};
+  }
+}
+
+/**
+ * Extract refresh token from cookies
+ * Looks for authRefreshToken cookie
+ *
+ * @param cookieHeader - The Cookie header value
+ * @returns The token or null if not present
+ */
+function extractRefreshTokenFromCookie(
+  cookieHeader: string | null
+): string | null {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const cookies = cookieHeader.split(";").map((c) => c.trim());
+  for (const cookie of cookies) {
+    if (cookie.startsWith("authRefreshToken=")) {
+      return cookie.substring(17);
+    }
+  }
+
+  return null;
+}
+
+// ============================================================================
+// REFRESH TOKEN GENERATION AND STORAGE
+// ============================================================================
+
+/**
+ * Generate a refresh token JWT for user session extension
+ * Creates a signed JWT with 7-day expiration
+ *
+ * @param user - User data to encode in refresh token
+ * @returns Object containing the token string and expiresIn seconds
+ * @throws Error if token generation fails
+ */
+export async function generateRefreshToken(
+  user: AuthUser
+): Promise<{ token: string; expiresIn: number }> {
+  try {
+    const token = await generateToken(user, REFRESH_TOKEN_EXPIRY);
+    return {
+      token,
+      expiresIn: REFRESH_TOKEN_EXPIRY,
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to generate refresh token: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+}
+
+/**
+ * Store a refresh token in the database
+ * Persists the hashed token for later validation
+ *
+ * @param userId - The user ID to associate with the token
+ * @param hashedToken - The bcrypt-hashed token to store
+ * @param expiresAt - When the refresh token expires
+ * @returns The created RefreshToken record if successful, null on error
+ */
+export async function storeRefreshToken(
+  userId: string,
+  hashedToken: string,
+  expiresAt: Date
+): Promise<any | null> {
+  try {
+    const { prisma } = await import("./prisma");
+
+    const refreshToken = await prisma.refreshToken.create({
+      data: {
+        userId,
+        token: hashedToken,
+        expiresAt,
+      },
+    });
+
+    return refreshToken;
+  } catch (error) {
+    console.error("Error storing refresh token:", error);
+    return null;
   }
 }

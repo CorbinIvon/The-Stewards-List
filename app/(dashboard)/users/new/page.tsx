@@ -51,7 +51,7 @@ export default function NewUserPage(): React.ReactElement {
         <Card>
           <CardBody className="text-center">
             <p className="text-slate-400 mb-4">
-              You don't have permission to create users.
+              You don&rsquo;t have permission to create users.
             </p>
             <Link href="/users">
               <Button variant="primary">Back to users</Button>

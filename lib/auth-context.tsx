@@ -35,10 +35,13 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
+  refreshToken?: string;
+  isTokenExpiring: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
   signup: (data: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  checkAndRefreshToken: () => Promise<void>;
 }
 
 // ============================================================================
@@ -76,16 +79,92 @@ export function AuthProvider({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [isTokenExpiring, setIsTokenExpiring] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<number>(0);
+
+  /**
+   * Check if access token is expiring soon (within 5 minutes)
+   * and attempt to refresh if needed
+   */
+  const checkAndRefreshToken = useCallback(async (): Promise<void> => {
+    const storedRefreshToken = apiClient.getRefreshToken();
+    if (!storedRefreshToken) {
+      setIsTokenExpiring(false);
+      return;
+    }
+
+    // Prevent excessive refresh attempts (max once per 10 seconds)
+    const now = Date.now();
+    if (now - lastRefreshTime < 10000) {
+      return;
+    }
+
+    try {
+      // Call apiClient to check if token is expiring
+      // The apiClient has isTokenExpired() that checks if token expires in next 5 minutes
+      const expirationCheckNeeded = (apiClient as any).isTokenExpired?.() ?? true;
+
+      if (expirationCheckNeeded) {
+        setIsTokenExpiring(true);
+        setLastRefreshTime(now);
+
+        // Attempt to refresh the access token
+        const result = await apiClient.refreshAccessToken(storedRefreshToken);
+
+        // Update context with new tokens
+        setRefreshToken(result.refreshToken);
+        setIsTokenExpiring(false);
+
+        // Update user info if available
+        if (result.user) {
+          setUser({
+            id: result.user.id,
+            email: result.user.email,
+            username: result.user.username,
+            role: result.user.role,
+            isActive: result.user.isActive,
+            requiresPasswordReset:
+              (result.user as any).requiresPasswordReset ?? false,
+          });
+        }
+      }
+    } catch (err) {
+      // If refresh fails with 401, token is revoked or invalid - auto logout
+      if (err instanceof ApiClientError && err.status === 401) {
+        console.warn("Refresh token expired or revoked, logging out");
+        await logout();
+      } else {
+        console.error("Token refresh error:", err);
+        setIsTokenExpiring(false);
+      }
+    }
+  }, [lastRefreshTime]);
 
   /**
    * Initialize authentication on component mount
-   * Checks for existing token and validates user session
+   * Checks for existing token, validates user session, and refreshes if needed
    */
   useEffect(() => {
     const initializeAuth = async (): Promise<void> => {
       try {
         setIsLoading(true);
         setError(null);
+
+        // Load refresh token from storage
+        const storedRefreshToken = apiClient.getRefreshToken();
+        if (storedRefreshToken) {
+          setRefreshToken(storedRefreshToken);
+        }
+
+        // Check if token needs refreshing before attempting to get user
+        if (storedRefreshToken) {
+          try {
+            await checkAndRefreshToken();
+          } catch (refreshErr) {
+            console.error("Auto-refresh on mount failed:", refreshErr);
+          }
+        }
 
         // Check if token exists and try to get current user
         try {
@@ -113,7 +192,7 @@ export function AuthProvider({
     };
 
     initializeAuth();
-  }, []);
+  }, [checkAndRefreshToken]);
 
   /**
    * Clear error message
@@ -124,7 +203,7 @@ export function AuthProvider({
 
   /**
    * Handle user login
-   * Validates credentials and stores authentication token
+   * Validates credentials and stores authentication token and refresh token
    */
   const login = useCallback(
     async (credentials: LoginRequest): Promise<void> => {
@@ -133,6 +212,13 @@ export function AuthProvider({
         setError(null);
 
         const response: LoginResponse = await apiClient.login(credentials);
+
+        // Extract and store refresh token
+        const refreshTokenFromResponse = (response as any).refreshToken;
+        if (refreshTokenFromResponse) {
+          apiClient.setRefreshToken(refreshTokenFromResponse);
+          setRefreshToken(refreshTokenFromResponse);
+        }
 
         setUser({
           id: response.user.id,
@@ -143,6 +229,9 @@ export function AuthProvider({
           requiresPasswordReset:
             (response.user as any).requiresPasswordReset ?? false,
         });
+
+        setIsTokenExpiring(false);
+        setLastRefreshTime(0);
       } catch (err) {
         const message =
           err instanceof ApiClientError
@@ -163,7 +252,7 @@ export function AuthProvider({
 
   /**
    * Handle user signup
-   * Creates new account and stores authentication token
+   * Creates new account and stores authentication token and refresh token
    */
   const signup = useCallback(async (data: SignupRequest): Promise<void> => {
     try {
@@ -171,6 +260,13 @@ export function AuthProvider({
       setError(null);
 
       const response: SignupResponse = await apiClient.signup(data);
+
+      // Extract and store refresh token
+      const refreshTokenFromResponse = (response as any).refreshToken;
+      if (refreshTokenFromResponse) {
+        apiClient.setRefreshToken(refreshTokenFromResponse);
+        setRefreshToken(refreshTokenFromResponse);
+      }
 
       setUser({
         id: response.user.id,
@@ -181,6 +277,9 @@ export function AuthProvider({
         requiresPasswordReset:
           (response.user as any).requiresPasswordReset ?? false,
       });
+
+      setIsTokenExpiring(false);
+      setLastRefreshTime(0);
     } catch (err) {
       const message =
         err instanceof ApiClientError
@@ -199,18 +298,25 @@ export function AuthProvider({
 
   /**
    * Handle user logout
-   * Clears local state and removes authentication token
+   * Calls logout on apiClient to revoke refresh token server-side,
+   * then clears local state and removes both authentication tokens
    */
   const logout = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
 
+      // Call server-side logout to revoke refresh token
       await apiClient.logout();
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
+      // Clear tokens from context and apiClient
       setUser(null);
+      setRefreshToken(null);
+      apiClient.clearRefreshToken();
+      setIsTokenExpiring(false);
+      setLastRefreshTime(0);
       setIsLoading(false);
     }
   }, []);
@@ -223,10 +329,13 @@ export function AuthProvider({
     isLoading,
     isAuthenticated: user !== null,
     error,
+    refreshToken: refreshToken ?? undefined,
+    isTokenExpiring,
     login,
     signup,
     logout,
     clearError,
+    checkAndRefreshToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -401,4 +510,48 @@ export function useSignup(): (data: SignupRequest) => Promise<void> {
 export function useLogout(): () => Promise<void> {
   const { logout } = useAuth();
   return logout;
+}
+
+/**
+ * Hook to check token expiration status
+ * Returns boolean indicating if token is expiring soon
+ *
+ * Useful for showing warnings or triggering refresh UI
+ *
+ * Example:
+ * ```tsx
+ * const isTokenExpiring = useTokenExpiration();
+ * if (isTokenExpiring) {
+ *   return <TokenExpirationWarning />;
+ * }
+ * ```
+ *
+ * @throws Error if used outside of AuthProvider
+ */
+export function useTokenExpiration(): boolean {
+  const { isTokenExpiring } = useAuth();
+  return isTokenExpiring;
+}
+
+/**
+ * Hook to manually trigger token refresh
+ * Returns the checkAndRefreshToken function
+ *
+ * Useful for forcing a refresh before an operation that requires
+ * a valid token, or for implementing background refresh intervals
+ *
+ * Example:
+ * ```tsx
+ * const checkAndRefreshToken = useCheckToken();
+ * const handleImportantAction = async () => {
+ *   await checkAndRefreshToken();
+ *   await apiClient.doSomethingImportant();
+ * };
+ * ```
+ *
+ * @throws Error if used outside of AuthProvider
+ */
+export function useCheckToken(): () => Promise<void> {
+  const { checkAndRefreshToken } = useAuth();
+  return checkAndRefreshToken;
 }

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
       if (email) {
         user = await prisma.user.findUnique({
-          where: { email: email.toLowerCase() },
+          where: { email: (email as string).toLowerCase() },
         });
       } else if (username) {
         user = await prisma.user.findUnique({
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Create JWT token
     let token: string;
     try {
-      const authUser = createAuthUserFromUser(user);
+      const authUser = createAuthUserFromUser(user as any);
       token = await generateToken(authUser, TOKEN_EXPIRY);
     } catch (error) {
       console.error("Token generation error:", error);
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Return success response
-    const authUser = createAuthUserFromUser(user);
+    const authUser = createAuthUserFromUser(user as any);
     const response: ApiResponse<LoginResponse> = {
       success: true,
       data: {

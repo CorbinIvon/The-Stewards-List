@@ -933,7 +933,7 @@ export default function UserDetailPage({
       >
         <div className="space-y-4">
           <p className="font-semibold">
-            You are about to reset this user's password.
+            You are about to reset this user&rsquo;s password.
           </p>
           <p className="text-sm text-gray-600">
             A temporary password will be generated and the user will be required

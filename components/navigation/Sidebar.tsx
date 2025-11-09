@@ -92,6 +92,22 @@ const IconProfile = () => (
   </svg>
 );
 
+const IconProjects = () => (
+  <svg
+    className="w-5 h-5"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7a2 2 0 012-2h14a2 2 0 012 2m0 0h2.25A2.25 2.25 0 0124 9.25v9.5A2.25 2.25 0 0121.75 21H2.25A2.25 2.25 0 010 18.75v-9.5A2.25 2.25 0 012.25 7H3"
+    />
+  </svg>
+);
+
 const IconSettings = () => (
   <svg
     className="w-5 h-5"
@@ -194,6 +210,11 @@ export function Sidebar({
       icon: "tasks",
     },
     {
+      label: "Projects",
+      href: "/projects",
+      icon: "projects",
+    },
+    {
       label: "Users",
       href: "/users",
       icon: "users",
@@ -220,6 +241,8 @@ export function Sidebar({
         return <IconDashboard />;
       case "tasks":
         return <IconTasks />;
+      case "projects":
+        return <IconProjects />;
       case "users":
         return <IconUsers />;
       case "profile":

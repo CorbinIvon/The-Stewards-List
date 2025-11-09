@@ -227,8 +227,9 @@ function canDeletePermission(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const { id } = await params;
   try {
     // Extract and verify authentication
     const authUser = extractAuthUser(request);
@@ -242,8 +243,6 @@ export async function GET(
         { status: 401 }
       );
     }
-
-    const { id } = params;
 
     // Fetch permission with includes
     const permission = await prisma.permission.findUnique({
@@ -319,8 +318,9 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const { id } = await params;
   try {
     // Extract and verify authentication
     const authUser = extractAuthUser(request);
@@ -389,8 +389,6 @@ export async function PATCH(
         { status: 400 }
       );
     }
-
-    const { id } = params;
 
     // Fetch existing permission
     const existingPermission = await prisma.permission.findUnique({
@@ -473,8 +471,9 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const { id } = await params;
   try {
     // Extract and verify authentication
     const authUser = extractAuthUser(request);
@@ -488,8 +487,6 @@ export async function DELETE(
         { status: 401 }
       );
     }
-
-    const { id } = params;
 
     // Fetch permission
     const permission = await prisma.permission.findUnique({

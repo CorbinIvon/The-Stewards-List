@@ -127,6 +127,18 @@ export interface Task {
  */
 export interface TaskWithOwner extends Task {
   owner: UserPublic;
+  projectLink?: ProjectInfo;
+}
+
+/**
+ * Project info for task responses (minimal project details)
+ */
+export interface ProjectInfo {
+  id: string;
+  projectName: string;
+  description?: string | null;
+  creatorId: string;
+  archived: boolean;
 }
 
 /**
@@ -213,6 +225,71 @@ export interface ChatWithRelations extends Chat {
   user: UserPublic;
   task: Task | null;
   quotedChat: Chat | null;
+}
+
+/**
+ * Project model interface
+ */
+export interface Project {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  creatorId: string;
+  projectName: string;
+  description: string | null;
+  archived: boolean;
+}
+
+/**
+ * Project collaborator model interface
+ */
+export interface ProjectCollaborator {
+  id: string;
+  projectId: string;
+  userId: string;
+  addedAt: Date;
+}
+
+/**
+ * Project permission model interface
+ */
+export interface ProjectPermission {
+  id: string;
+  projectId: string;
+  userId: string;
+  permission: PermissionType;
+}
+
+/**
+ * Project with creator information (for API responses)
+ */
+export interface ProjectWithCreator extends Project {
+  creator: UserPublic;
+}
+
+/**
+ * Project with full relations (tasks, collaborators, permissions)
+ */
+export interface ProjectWithRelations extends ProjectWithCreator {
+  tasks: Task[];
+  collaborators: ProjectCollaborator[];
+  permissions: ProjectPermission[];
+}
+
+/**
+ * Project collaborator with user information
+ */
+export interface ProjectCollaboratorWithUser extends ProjectCollaborator {
+  user: UserPublic;
+  project: Project;
+}
+
+/**
+ * Project permission with user information
+ */
+export interface ProjectPermissionWithUser extends ProjectPermission {
+  user: UserPublic;
+  project: Project;
 }
 
 // ============================================================================
@@ -351,6 +428,7 @@ export interface CreateTaskRequest {
   priority?: TaskPriority;
   frequency?: TaskFrequency;
   dueDate?: string; // ISO 8601 date string
+  projectId?: string; // Optional project ID for task linking
 }
 
 /**
@@ -364,6 +442,17 @@ export interface UpdateTaskRequest {
   frequency?: TaskFrequency;
   dueDate?: string | null;
   completedAt?: string | null;
+  projectId?: string | null;
+}
+
+/**
+ * Task filters for GET requests
+ */
+export interface TaskFiltersRequest {
+  projectId?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  ownerId?: string;
 }
 
 /**
@@ -433,6 +522,59 @@ export interface TaskAssignmentResponse {
   createdAt: Date;
 }
 
+/**
+ * Create project request payload
+ */
+export interface CreateProjectRequest {
+  projectName: string;
+  description?: string;
+}
+
+/**
+ * Update project request payload
+ */
+export interface UpdateProjectRequest {
+  projectName?: string;
+  description?: string | null;
+  archived?: boolean;
+}
+
+/**
+ * Move task to project request payload
+ */
+export interface MoveTaskToProjectRequest {
+  projectId: string;
+}
+
+/**
+ * Link task to project request payload
+ */
+export interface LinkTaskToProjectRequest {
+  taskId: string;
+}
+
+/**
+ * Create project collaborator request payload
+ */
+export interface AddProjectCollaboratorRequest {
+  userId: string;
+}
+
+/**
+ * Create project permission request payload
+ */
+export interface CreateProjectPermissionRequest {
+  userId: string;
+  permission: PermissionType;
+}
+
+/**
+ * Update project permission request payload
+ */
+export interface UpdateProjectPermissionRequest {
+  permission: PermissionType;
+}
+
 // ============================================================================
 // ERROR TYPES
 // ============================================================================
@@ -456,6 +598,12 @@ export enum ErrorCode {
   NOT_FOUND = "NOT_FOUND",
   CONFLICT = "CONFLICT",
   ALREADY_EXISTS = "ALREADY_EXISTS",
+
+  // Project-specific errors
+  PROJECT_NOT_FOUND = "PROJECT_NOT_FOUND",
+  PROJECT_TASK_CONFLICT = "PROJECT_TASK_CONFLICT",
+  INVALID_PROJECT_ACCESS = "INVALID_PROJECT_ACCESS",
+  TASK_ALREADY_IN_PROJECT = "TASK_ALREADY_IN_PROJECT",
 
   // Server
   INTERNAL_ERROR = "INTERNAL_ERROR",

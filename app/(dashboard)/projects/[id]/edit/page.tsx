@@ -1,19 +1,18 @@
 "use client";
 
 /**
- * Edit Task Page
- * Allows users to edit an existing task
- * Located at: /dashboard/tasks/[id]/edit
+ * Edit Project Page
+ * Allows users to edit an existing project
+ * Located at: /dashboard/projects/[id]/edit
  *
  * Features:
- * - Fetch and display existing task data
- * - Permission checks (owner, assignee, Admin, Manager can edit)
+ * - Fetch and display existing project data
+ * - Permission checks (only creator can edit)
  * - Form validation and error handling
- * - Success toast notification after update
- * - Redirect to task detail page after successful edit
+ * - Success message after update
+ * - Redirect to project detail page after successful edit
  * - Loading states for initial fetch and submission
- * - Breadcrumb navigation
- * - 404 handling for invalid task IDs
+ * - 404 handling for invalid project IDs
  * - 403 handling for permission denied
  */
 
@@ -31,15 +30,12 @@ import {
 import Alert from "@/components/ui/Alert";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
-import Select from "@/components/ui/Select";
 import { useAuth } from "@/lib/auth-context";
 import { apiClient, ApiClientError } from "@/lib/api-client";
-import { TaskStatus, TaskPriority, TaskFrequency } from "@/lib/types";
 import type {
-  Task,
-  TaskWithOwner,
+  ProjectWithRelations,
   UserRole,
-  UpdateTaskRequest,
+  UpdateProjectRequest,
 } from "@/lib/types";
 
 // ============================================================================
@@ -50,32 +46,24 @@ import type {
  * Form state interface
  */
 interface FormState {
-  title: string;
+  projectName: string;
   description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  frequency: TaskFrequency;
-  dueDate: string;
 }
 
 /**
  * Form errors interface
  */
 interface FormErrors {
-  title?: string;
+  projectName?: string;
   description?: string;
-  status?: string;
-  priority?: string;
-  frequency?: string;
-  dueDate?: string;
 }
 
 /**
  * Page state interface
  */
 interface PageState {
-  task: TaskWithOwner | null;
-  isLoadingTask: boolean;
+  project: ProjectWithRelations | null;
+  isLoadingProject: boolean;
   isSubmitting: boolean;
   error: string | null;
   successMessage: string | null;
@@ -87,67 +75,27 @@ interface PageState {
 // CONSTANTS
 // ============================================================================
 
-const TASK_STATUS_OPTIONS: Array<{ value: TaskStatus; label: string }> = [
-  { value: TaskStatus.TODO, label: "To Do" },
-  { value: TaskStatus.IN_PROGRESS, label: "In Progress" },
-  { value: TaskStatus.COMPLETED, label: "Completed" },
-  { value: TaskStatus.CANCELLED, label: "Cancelled" },
-];
-
-const TASK_PRIORITY_OPTIONS: Array<{ value: TaskPriority; label: string }> = [
-  { value: TaskPriority.LOW, label: "Low" },
-  { value: TaskPriority.MEDIUM, label: "Medium" },
-  { value: TaskPriority.HIGH, label: "High" },
-  { value: TaskPriority.URGENT, label: "Urgent" },
-];
-
-const RECURRENCE_OPTIONS: Array<{ value: TaskFrequency; label: string }> = [
-  { value: TaskFrequency.ONCE, label: "Once (No recurrence)" },
-  { value: TaskFrequency.DAILY, label: "Daily" },
-  { value: TaskFrequency.WEEKLY, label: "Weekly" },
-  { value: TaskFrequency.BIWEEKLY, label: "Bi-weekly" },
-  { value: TaskFrequency.MONTHLY, label: "Monthly" },
-  { value: TaskFrequency.QUARTERLY, label: "Quarterly" },
-  { value: TaskFrequency.YEARLY, label: "Yearly" },
-];
+const MAX_PROJECT_NAME_LENGTH = 255;
+const MAX_DESCRIPTION_LENGTH = 2000;
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
 /**
- * Check if user has permission to edit the task
+ * Check if user has permission to edit the project
+ * Only the creator can edit a project
  */
-function canEditTask(
-  task: TaskWithOwner | null,
-  userId: string | undefined,
-  userRole: UserRole | undefined
+function canEditProject(
+  project: ProjectWithRelations | null,
+  userId: string | undefined
 ): boolean {
-  if (!task || !userId || !userRole) {
+  if (!project || !userId) {
     return false;
   }
 
-  // Admin and Manager can always edit
-  if (userRole === "ADMIN" || userRole === "MANAGER") {
-    return true;
-  }
-
-  // Owner can edit their own tasks
-  if (task.ownerId === userId) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Format date to ISO string for input[type="date"]
- */
-function formatDateForInput(date: Date | string | null): string {
-  if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
-  if (isNaN(d.getTime())) return "";
-  return d.toISOString().split("T")[0];
+  // Only creator can edit
+  return project.creatorId === userId;
 }
 
 /**
@@ -156,53 +104,14 @@ function formatDateForInput(date: Date | string | null): string {
 function validateForm(formData: FormState): FormErrors {
   const errors: FormErrors = {};
 
-  if (!formData.title.trim()) {
-    errors.title = "Title is required";
-  } else if (formData.title.length > 255) {
-    errors.title = "Title must be less than 255 characters";
+  if (!formData.projectName.trim()) {
+    errors.projectName = "Project name is required";
+  } else if (formData.projectName.length > MAX_PROJECT_NAME_LENGTH) {
+    errors.projectName = `Project name must be less than ${MAX_PROJECT_NAME_LENGTH} characters`;
   }
 
-  if (formData.description.length > 2000) {
-    errors.description = "Description must be less than 2000 characters";
-  }
-
-  // Status validation
-  const validStatuses: TaskStatus[] = [
-    TaskStatus.TODO,
-    TaskStatus.IN_PROGRESS,
-    TaskStatus.COMPLETED,
-    TaskStatus.CANCELLED,
-  ];
-  if (!validStatuses.includes(formData.status)) {
-    errors.status = "Invalid status selected";
-  }
-
-  // Priority validation
-  const validPriorities: string[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
-  if (!validPriorities.includes(formData.priority)) {
-    errors.priority = "Invalid priority selected";
-  }
-
-  // Frequency validation
-  const validFrequencies: string[] = [
-    "ONCE",
-    "DAILY",
-    "WEEKLY",
-    "BIWEEKLY",
-    "MONTHLY",
-    "QUARTERLY",
-    "YEARLY",
-  ];
-  if (!validFrequencies.includes(formData.frequency)) {
-    errors.frequency = "Invalid recurrence pattern selected";
-  }
-
-  // Due date validation
-  if (formData.dueDate) {
-    const dueDate = new Date(formData.dueDate);
-    if (isNaN(dueDate.getTime())) {
-      errors.dueDate = "Invalid date format";
-    }
+  if (formData.description.length > MAX_DESCRIPTION_LENGTH) {
+    errors.description = `Description must be less than ${MAX_DESCRIPTION_LENGTH} characters`;
   }
 
   return errors;
@@ -212,31 +121,32 @@ function validateForm(formData: FormState): FormErrors {
 // COMPONENT
 // ============================================================================
 
-interface EditTaskPageProps {
+interface EditProjectPageProps {
   params: Promise<{
     id: string;
   }>;
 }
 
 /**
- * Edit Task Page Component
+ * Edit Project Page Component
  */
-export default function EditTaskPage({
+export default function EditProjectPage({
   params,
-}: EditTaskPageProps): React.ReactElement {
+}: EditProjectPageProps): React.ReactElement {
   const router = useRouter();
-  const [taskId, setTaskId] = useState<string>("");
+  const [projectId, setProjectId] = useState<string>("");
 
   // Unwrap params promise
   useEffect(() => {
-    params.then(p => setTaskId(p.id));
+    params.then((p) => setProjectId(p.id));
   }, [params]);
+
   const { user } = useAuth();
 
   // State management
   const [pageState, setPageState] = useState<PageState>({
-    task: null,
-    isLoadingTask: true,
+    project: null,
+    isLoadingProject: true,
     isSubmitting: false,
     error: null,
     successMessage: null,
@@ -245,12 +155,8 @@ export default function EditTaskPage({
   });
 
   const [formData, setFormData] = useState<FormState>({
-    title: "",
+    projectName: "",
     description: "",
-    status: TaskStatus.TODO,
-    priority: TaskPriority.MEDIUM,
-    frequency: TaskFrequency.ONCE,
-    dueDate: "",
   });
 
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -260,26 +166,26 @@ export default function EditTaskPage({
   // =========================================================================
 
   /**
-   * Fetch task data on component mount
+   * Fetch project data on component mount
    */
   useEffect(() => {
-    const fetchTask = async (): Promise<void> => {
+    const fetchProject = async (): Promise<void> => {
       try {
         setPageState((prev) => ({
           ...prev,
-          isLoadingTask: true,
+          isLoadingProject: true,
           error: null,
           notFound: false,
           permissionDenied: false,
         }));
 
-        const task = await apiClient.getTask(taskId);
+        const project = await apiClient.getProject(projectId);
 
-        // Check permissions
-        if (!canEditTask(task, user?.id, user?.role)) {
+        // Check permissions - only creator can edit
+        if (!canEditProject(project, user?.id)) {
           setPageState((prev) => ({
             ...prev,
-            isLoadingTask: false,
+            isLoadingProject: false,
             permissionDenied: true,
           }));
           return;
@@ -287,52 +193,48 @@ export default function EditTaskPage({
 
         // Set initial form data
         setFormData({
-          title: task.title,
-          description: task.description || "",
-          status: task.status,
-          priority: task.priority,
-          frequency: task.frequency || TaskFrequency.ONCE,
-          dueDate: formatDateForInput(task.dueDate),
+          projectName: project.projectName,
+          description: project.description || "",
         });
 
         setPageState((prev) => ({
           ...prev,
-          task,
-          isLoadingTask: false,
+          project,
+          isLoadingProject: false,
         }));
       } catch (err) {
         const statusCode = err instanceof ApiClientError ? err.status : 500;
         const errorMessage =
           statusCode === 404
-            ? "Task not found"
+            ? "Project not found"
             : err instanceof ApiClientError
               ? err.message
               : err instanceof Error
                 ? err.message
-                : "Failed to load task";
+                : "Failed to load project";
 
         if (statusCode === 404) {
           setPageState((prev) => ({
             ...prev,
-            isLoadingTask: false,
+            isLoadingProject: false,
             notFound: true,
           }));
         } else {
           setPageState((prev) => ({
             ...prev,
-            isLoadingTask: false,
+            isLoadingProject: false,
             error: errorMessage,
           }));
         }
 
-        console.error("Error fetching task:", err);
+        console.error("Error fetching project:", err);
       }
     };
 
-    if (taskId) {
-      fetchTask();
+    if (projectId) {
+      fetchProject();
     }
-  }, [taskId, user?.id, user?.role]);
+  }, [projectId, user?.id]);
 
   // =========================================================================
   // FORM HANDLERS
@@ -342,9 +244,7 @@ export default function EditTaskPage({
    * Handle form input changes
    */
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ): void => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -385,29 +285,24 @@ export default function EditTaskPage({
       }));
 
       // Prepare update payload
-      const updatePayload: UpdateTaskRequest = {
-        title: formData.title,
-        description: formData.description || undefined,
-        status: formData.status,
-        priority: formData.priority,
-        frequency:
-          formData.frequency !== TaskFrequency.ONCE ? formData.frequency : undefined,
-        dueDate: formData.dueDate || null,
+      const updatePayload: UpdateProjectRequest = {
+        projectName: formData.projectName,
+        description: formData.description || null,
       };
 
       // Submit update
-      await apiClient.updateTask(taskId, updatePayload);
+      await apiClient.updateProject(projectId, updatePayload);
 
       // Show success message
       setPageState((prev) => ({
         ...prev,
         isSubmitting: false,
-        successMessage: "Task updated successfully!",
+        successMessage: "Project updated successfully!",
       }));
 
-      // Redirect to task detail page after short delay
+      // Redirect to project detail page after short delay
       setTimeout(() => {
-        router.push(`/tasks/${taskId}`);
+        router.push(`/projects/${projectId}`);
       }, 1500);
     } catch (err) {
       const errorMessage =
@@ -415,7 +310,7 @@ export default function EditTaskPage({
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Failed to update task";
+            : "Failed to update project";
 
       setPageState((prev) => ({
         ...prev,
@@ -423,7 +318,7 @@ export default function EditTaskPage({
         error: errorMessage,
       }));
 
-      console.error("Error updating task:", err);
+      console.error("Error updating project:", err);
     }
   };
 
@@ -432,12 +327,12 @@ export default function EditTaskPage({
   // =========================================================================
 
   // Loading state
-  if (pageState.isLoadingTask) {
+  if (pageState.isLoadingProject) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" />
-          <p className="text-gray-600">Loading task...</p>
+          <p className="text-gray-600">Loading project...</p>
         </div>
       </div>
     );
@@ -448,8 +343,8 @@ export default function EditTaskPage({
     return (
       <div className="mx-auto max-w-2xl space-y-6 py-8">
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Link href="/tasks" className="hover:text-blue-600">
-            Tasks
+          <Link href="/projects" className="hover:text-blue-600">
+            Projects
           </Link>
           <span>/</span>
           <span className="text-gray-600">Not Found</span>
@@ -458,13 +353,13 @@ export default function EditTaskPage({
         <Card>
           <CardBody className="text-center py-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Task Not Found
+              Project Not Found
             </h2>
             <p className="text-gray-600 mb-6">
-              The task you are looking for does not exist or has been deleted.
+              The project you are looking for does not exist or has been deleted.
             </p>
-            <Link href="/tasks">
-              <Button>Back to Tasks</Button>
+            <Link href="/projects">
+              <Button>Back to Projects</Button>
             </Link>
           </CardBody>
         </Card>
@@ -477,8 +372,8 @@ export default function EditTaskPage({
     return (
       <div className="mx-auto max-w-2xl space-y-6 py-8">
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Link href="/tasks" className="hover:text-blue-600">
-            Tasks
+          <Link href="/projects" className="hover:text-blue-600">
+            Projects
           </Link>
           <span>/</span>
           <span className="text-gray-600">Access Denied</span>
@@ -490,11 +385,11 @@ export default function EditTaskPage({
               Access Denied
             </h2>
             <p className="text-gray-600 mb-6">
-              You do not have permission to edit this task. Only the task owner,
-              assigned users, managers, and admins can edit tasks.
+              You do not have permission to edit this project. Only the project
+              creator can edit project details.
             </p>
-            <Link href="/tasks">
-              <Button>Back to Tasks</Button>
+            <Link href="/projects">
+              <Button>Back to Projects</Button>
             </Link>
           </CardBody>
         </Card>
@@ -514,17 +409,17 @@ export default function EditTaskPage({
           Dashboard
         </Link>
         <span>/</span>
-        <Link href="/tasks" className="hover:text-blue-600">
-          Tasks
+        <Link href="/projects" className="hover:text-blue-600">
+          Projects
         </Link>
         <span>/</span>
-        {pageState.task && (
+        {pageState.project && (
           <>
             <Link
-              href={`/tasks/${pageState.task.id}`}
+              href={`/projects/${pageState.project.id}`}
               className="hover:text-blue-600"
             >
-              {pageState.task.title}
+              {pageState.project.projectName}
             </Link>
             <span>/</span>
           </>
@@ -567,83 +462,36 @@ export default function EditTaskPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Edit Task</CardTitle>
+          <CardTitle>Edit Project</CardTitle>
         </CardHeader>
 
         <CardBody>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title Field */}
+            {/* Project Name Field */}
             <Input
-              label="Task Title"
-              name="title"
+              label="Project Name"
+              name="projectName"
               type="text"
-              placeholder="Enter task title"
-              value={formData.title}
+              placeholder="Enter project name"
+              value={formData.projectName}
               onChange={handleInputChange}
-              error={formErrors.title}
+              error={formErrors.projectName}
               required
               disabled={pageState.isSubmitting}
-              maxLength={255}
+              maxLength={MAX_PROJECT_NAME_LENGTH}
             />
 
             {/* Description Field */}
             <Textarea
               label="Description"
               name="description"
-              placeholder="Enter task description (optional)"
+              placeholder="Enter project description (optional)"
               value={formData.description}
               onChange={handleInputChange}
               error={formErrors.description}
               disabled={pageState.isSubmitting}
-              maxLength={2000}
+              maxLength={MAX_DESCRIPTION_LENGTH}
               rows={5}
-            />
-
-            {/* Status Field */}
-            <Select
-              label="Status"
-              name="status"
-              options={TASK_STATUS_OPTIONS}
-              value={formData.status}
-              onChange={handleInputChange}
-              error={formErrors.status}
-              required
-              disabled={pageState.isSubmitting}
-            />
-
-            {/* Priority Field */}
-            <Select
-              label="Priority"
-              name="priority"
-              options={TASK_PRIORITY_OPTIONS}
-              value={formData.priority}
-              onChange={handleInputChange}
-              error={formErrors.priority}
-              required
-              disabled={pageState.isSubmitting}
-            />
-
-            {/* Recurrence Field */}
-            <Select
-              label="Recurrence Pattern"
-              name="frequency"
-              options={RECURRENCE_OPTIONS}
-              value={formData.frequency}
-              onChange={handleInputChange}
-              error={formErrors.frequency}
-              required
-              disabled={pageState.isSubmitting}
-            />
-
-            {/* Due Date Field */}
-            <Input
-              label="Due Date"
-              name="dueDate"
-              type="date"
-              value={formData.dueDate}
-              onChange={handleInputChange}
-              error={formErrors.dueDate}
-              disabled={pageState.isSubmitting}
             />
 
             {/* Form Actions */}
@@ -657,7 +505,7 @@ export default function EditTaskPage({
                 {pageState.isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
 
-              <Link href={`/tasks/${taskId}`}>
+              <Link href={`/projects/${projectId}`}>
                 <Button
                   type="button"
                   variant="secondary"
@@ -672,40 +520,52 @@ export default function EditTaskPage({
       </Card>
 
       {/* ===================================================================
-          TASK INFO SECTION
+          PROJECT INFO SECTION
           =================================================================== */}
 
-      {pageState.task && (
+      {pageState.project && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Task Information</CardTitle>
+            <CardTitle className="text-base">Project Information</CardTitle>
           </CardHeader>
           <CardBody className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-gray-600 font-medium">Owner</p>
+                <p className="text-gray-600 font-medium">Creator</p>
                 <p className="text-gray-900">
-                  {pageState.task.owner?.displayName ||
-                    pageState.task.owner?.username ||
+                  {pageState.project.creator?.displayName ||
+                    pageState.project.creator?.username ||
                     "Unknown"}
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 font-medium">Created</p>
                 <p className="text-gray-900">
-                  {new Date(pageState.task.createdAt).toLocaleDateString()}
+                  {new Date(pageState.project.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 font-medium">Last Updated</p>
                 <p className="text-gray-900">
-                  {new Date(pageState.task.updatedAt).toLocaleDateString()}
+                  {new Date(pageState.project.updatedAt).toLocaleDateString()}
                 </p>
               </div>
               <div>
-                <p className="text-gray-600 font-medium">Task ID</p>
+                <p className="text-gray-600 font-medium">Project ID</p>
                 <p className="text-gray-900 font-mono text-xs">
-                  {pageState.task.id}
+                  {pageState.project.id}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600 font-medium">Collaborators</p>
+                <p className="text-gray-900">
+                  {pageState.project.collaborators?.length || 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600 font-medium">Tasks</p>
+                <p className="text-gray-900">
+                  {pageState.project.tasks?.length || 0}
                 </p>
               </div>
             </div>

@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromAuthHeader, getUserFromCookie } from "@/lib/auth";
 import type {
   ApiResponse,
+  ApiError,
   PaginatedResponse,
   CreatePermissionRequest,
   PermissionType,
@@ -127,7 +128,7 @@ const permissionInclude: PermissionInclude = {
  */
 export async function GET(
   request: NextRequest
-): Promise<NextResponse<PaginatedResponse<any> | ApiResponse<any>>> {
+): Promise<NextResponse<PaginatedResponse<any> | ApiResponse<any> | ApiError>> {
   try {
     // Extract and verify authentication
     const authUser = await extractAuthUser(request);
@@ -301,7 +302,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest
-): Promise<NextResponse<ApiResponse<any>>> {
+): Promise<NextResponse<ApiResponse<any> | ApiError>> {
   try {
     // Extract and verify authentication
     const authUser = await extractAuthUser(request);

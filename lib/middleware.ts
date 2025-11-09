@@ -1,6 +1,111 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+// ============================================================================
+// RATE LIMITING CONFIGURATION
+// ============================================================================
+
+/**
+ * Rate limiting configuration constants
+ */
+const RATE_LIMIT_REQUESTS = 100; // requests per window
+const RATE_LIMIT_WINDOW = 15 * 60; // 15 minutes in seconds
+const RATE_LIMIT_BYPASS_PATHS = ["/api/health", "/api/status"];
+
+/**
+ * Redis client type definition
+ * Supports both 'redis' and 'ioredis' packages
+ */
+interface RedisClient {
+  get(key: string): Promise<string | null>;
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<number>;
+  del(key: string): Promise<number>;
+  disconnect(): Promise<void>;
+}
+
+/**
+ * Global Redis client instance (lazy-loaded)
+ */
+let redisClient: RedisClient | null = null;
+let redisError: Error | null = null;
+let redisInitialized = false;
+
+/**
+ * Initialize Redis client
+ * Handles both 'redis' and 'ioredis' packages
+ * Returns null if Redis is unavailable (fails open)
+ */
+async function initializeRedis(): Promise<RedisClient | null> {
+  if (redisInitialized) {
+    if (redisError) {
+      throw redisError;
+    }
+    return redisClient;
+  }
+
+  redisInitialized = true;
+
+  const redisUrl = process.env.REDIS_URL;
+
+  if (!redisUrl) {
+    // eslint-disable-next-line no-console
+    console.info("REDIS_URL not configured - rate limiting disabled");
+    return null;
+  }
+
+  try {
+    // Try importing 'redis' package first (official Node.js Redis client)
+    try {
+      // eslint-disable-next-line no-console
+      const redisModule: any = await import("redis");
+      const { createClient } = redisModule;
+      const client = createClient({ url: redisUrl });
+
+      // Set up error handler
+      client.on("error", (err: Error) => {
+        // eslint-disable-next-line no-console
+        console.error("Redis client error:", err);
+      });
+
+      // Connect to Redis
+      await client.connect();
+      redisClient = client as unknown as RedisClient;
+      // eslint-disable-next-line no-console
+      console.info("Redis client connected successfully");
+      return redisClient;
+    } catch (redisErr) {
+      // Fallback to ioredis package
+      // eslint-disable-next-line no-console
+      const ioredisModule: any = await import("ioredis");
+      const Redis = ioredisModule.default || ioredisModule;
+      const client = new Redis(redisUrl);
+
+      // Set up error handler
+      client.on("error", (err: Error) => {
+        // eslint-disable-next-line no-console
+        console.error("Redis client error:", err);
+      });
+
+      redisClient = client as unknown as RedisClient;
+      // eslint-disable-next-line no-console
+      console.info("Redis client (ioredis) connected successfully");
+      return redisClient;
+    }
+  } catch (error) {
+    const err =
+      error instanceof Error
+        ? error
+        : new Error("Unknown error initializing Redis");
+    redisError = err;
+    // eslint-disable-next-line no-console
+    console.warn("Failed to initialize Redis client:", err.message);
+    // eslint-disable-next-line no-console
+    console.warn("Rate limiting will be disabled - requests will not be limited");
+    return null;
+  }
+}
+
 /**
  * CORS Configuration
  * Defines allowed origins for cross-origin requests
@@ -156,37 +261,121 @@ export function requestLoggingMiddleware(request: NextRequest): () => void {
   };
 }
 
+// ============================================================================
+// RATE LIMITING HELPERS
+// ============================================================================
+
 /**
- * Rate Limiting Middleware (Placeholder)
- * TODO: Implement rate limiting with Redis
+ * Extract client IP from request headers
+ * Checks X-Forwarded-For first (for proxied requests), falls back to socket address
  *
- * Current requirements for full implementation:
- * - Install Redis client: npm install redis
- * - Set REDIS_URL environment variable
- * - Track requests per IP address or user ID
- * - Return 429 Too Many Requests when limit exceeded
- * - Store rate limit state in Redis with TTL
+ * @param request - NextRequest object
+ * @returns Client IP address or 'unknown' if not available
+ */
+function getClientIp(request: NextRequest): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    // X-Forwarded-For can contain multiple IPs, take the first one
+    return forwardedFor.split(",")[0].trim();
+  }
+
+  // Try to get IP from socket (available in some environments)
+  try {
+    const socket = (request as any).socket;
+    if (socket && socket.remoteAddress) {
+      return socket.remoteAddress;
+    }
+  } catch (e) {
+    // Silently ignore errors
+  }
+
+  // Fallback to custom header or unknown
+  return request.headers.get("x-client-ip") || "unknown";
+}
+
+/**
+ * Create a consistent Redis key for rate limiting
  *
- * Example implementation structure:
- * ```
- * import { createClient } from 'redis';
+ * @param endpoint - API endpoint path
+ * @param clientIp - Client IP address
+ * @returns Redis key string
+ */
+function getRateLimitKey(endpoint: string, clientIp: string): string {
+  return `rate-limit:${endpoint}:${clientIp}`;
+}
+
+/**
+ * Check if a path should bypass rate limiting
  *
- * const redis = createClient({ url: process.env.REDIS_URL });
+ * @param path - Request path
+ * @returns true if path should bypass rate limiting
+ */
+function shouldBypassRateLimit(path: string): boolean {
+  return RATE_LIMIT_BYPASS_PATHS.some((bypassPath) => path.startsWith(bypassPath));
+}
+
+/**
+ * Check and increment rate limit counter in Redis
+ * Returns the current count and whether the request is rate limited
  *
- * export async function rateLimitMiddleware(request: NextRequest) {
- *   const identifier = request.ip || 'unknown';
- *   const key = `rate-limit:${identifier}`;
+ * @param key - Redis key for this rate limit bucket
+ * @returns Object with count and isRateLimited flag
+ */
+async function checkRateLimit(
+  key: string
+): Promise<{ count: number; isRateLimited: boolean }> {
+  try {
+    const redis = await initializeRedis();
+
+    // If Redis is unavailable, allow the request (fail open)
+    if (!redis) {
+      return { count: 0, isRateLimited: false };
+    }
+
+    const count = await redis.incr(key);
+
+    // Set TTL on first request (count === 1)
+    if (count === 1) {
+      await redis.expire(key, RATE_LIMIT_WINDOW);
+    }
+
+    const isRateLimited = count > RATE_LIMIT_REQUESTS;
+
+    return { count, isRateLimited };
+  } catch (error) {
+    console.error("Error checking rate limit:", error);
+    // On error, allow the request (fail open)
+    return { count: 0, isRateLimited: false };
+  }
+}
+
+/**
+ * Reset rate limit counter for a specific key (admin utility)
+ * Useful for clearing rate limits for specific IPs or users
  *
- *   const count = await redis.incr(key);
- *   if (count === 1) {
- *     await redis.expire(key, 60); // 60 second window
- *   }
- *
- *   if (count > 100) { // 100 requests per minute
- *     return new NextResponse('Too Many Requests', { status: 429 });
- *   }
- * }
- * ```
+ * @param key - Redis key to reset
+ * @returns true if key was deleted, false otherwise
+ */
+async function resetRateLimit(key: string): Promise<boolean> {
+  try {
+    const redis = await initializeRedis();
+
+    if (!redis) {
+      return false;
+    }
+
+    const deleted = await redis.del(key);
+    return deleted > 0;
+  } catch (error) {
+    console.error("Error resetting rate limit:", error);
+    return false;
+  }
+}
+
+/**
+ * Rate Limiting Middleware
+ * Checks and enforces rate limits using Redis
+ * Gracefully degrades to no limiting if Redis is unavailable
  *
  * @param request - NextRequest object
  * @returns true if request should be allowed, false if rate limited
@@ -194,18 +383,25 @@ export function requestLoggingMiddleware(request: NextRequest): () => void {
 export async function rateLimitMiddleware(
   request: NextRequest
 ): Promise<boolean> {
-  // TODO: Implement Redis-backed rate limiting
-  // For now, this is a placeholder that always allows requests
+  const path = request.nextUrl.pathname;
 
-  const redisUrl = process.env.REDIS_URL;
-
-  if (!redisUrl) {
-    console.warn("REDIS_URL not configured - rate limiting disabled");
+  // Bypass rate limiting for specific paths
+  if (shouldBypassRateLimit(path)) {
     return true;
   }
 
-  // Placeholder for Redis integration
-  // This will be implemented when Redis is available
+  const clientIp = getClientIp(request);
+  const key = getRateLimitKey(path, clientIp);
+
+  const { count, isRateLimited } = await checkRateLimit(key);
+
+  if (isRateLimited) {
+    console.warn(
+      `Rate limit exceeded for ${clientIp} on ${path} (${count} requests)`
+    );
+    return false;
+  }
+
   return true;
 }
 
@@ -286,13 +482,18 @@ export function withErrorHandling<
           status: 429,
           error: "Rate limit exceeded",
         });
-        return NextResponse.json(
+        const response = NextResponse.json(
           {
             error: "Too Many Requests",
             message: "Rate limit exceeded. Please try again later.",
           },
           { status: 429 }
         );
+        // Add rate limit headers
+        response.headers.set("Retry-After", String(RATE_LIMIT_WINDOW));
+        response.headers.set("X-RateLimit-Limit", String(RATE_LIMIT_REQUESTS));
+        response.headers.set("X-RateLimit-Window", String(RATE_LIMIT_WINDOW));
+        return response;
       }
 
       // Execute the main handler
@@ -305,6 +506,10 @@ export function withErrorHandling<
 
       // Add CORS headers
       response = corsMiddleware(request, response);
+
+      // Add rate limit headers to successful response (for client-side tracking)
+      response.headers.set("X-RateLimit-Limit", String(RATE_LIMIT_REQUESTS));
+      response.headers.set("X-RateLimit-Window", String(RATE_LIMIT_WINDOW));
 
       // Log successful request
       logRequest({
@@ -403,4 +608,97 @@ export function withApiProtection<
   T extends (...args: any[]) => Promise<NextResponse>
 >(handler: T): T {
   return withErrorHandling(handler);
+}
+
+// ============================================================================
+// ADMIN RATE LIMIT MANAGEMENT
+// ============================================================================
+
+/**
+ * Admin utility to reset rate limit for an IP address
+ * Useful for clearing rate limits for legitimate users who hit the limit
+ *
+ * @param ipAddress - IP address to reset rate limit for
+ * @param endpoint - Optional specific endpoint path (resets all if not provided)
+ * @returns true if reset was successful, false otherwise
+ *
+ * @example
+ * // Reset all endpoints for an IP
+ * await resetRateLimitForIp("192.168.1.1");
+ *
+ * // Reset specific endpoint for an IP
+ * await resetRateLimitForIp("192.168.1.1", "/api/users");
+ */
+export async function resetRateLimitForIp(
+  ipAddress: string,
+  endpoint?: string
+): Promise<boolean> {
+  if (endpoint) {
+    const key = getRateLimitKey(endpoint, ipAddress);
+    return await resetRateLimit(key);
+  }
+
+  // If no specific endpoint, try to reset multiple common endpoints
+  // This is a best-effort approach - Redis keys are stored per endpoint
+  const commonEndpoints = [
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/auth/forgot-password",
+    "/api/users",
+    "/api/tasks",
+  ];
+
+  let resetCount = 0;
+  for (const ep of commonEndpoints) {
+    const key = getRateLimitKey(ep, ipAddress);
+    const success = await resetRateLimit(key);
+    if (success) resetCount++;
+  }
+
+  return resetCount > 0;
+}
+
+/**
+ * Get current rate limit status for an IP address
+ * Useful for monitoring and debugging rate limit issues
+ *
+ * @param ipAddress - IP address to check
+ * @param endpoint - API endpoint path
+ * @returns Current request count and whether IP is rate limited
+ */
+export async function getRateLimitStatus(
+  ipAddress: string,
+  endpoint: string
+): Promise<{ count: number; isRateLimited: boolean; limit: number; window: number }> {
+  try {
+    const redis = await initializeRedis();
+
+    if (!redis) {
+      return {
+        count: 0,
+        isRateLimited: false,
+        limit: RATE_LIMIT_REQUESTS,
+        window: RATE_LIMIT_WINDOW,
+      };
+    }
+
+    const key = getRateLimitKey(endpoint, ipAddress);
+    const countStr = await redis.get(key);
+    const count = countStr ? parseInt(countStr, 10) : 0;
+
+    return {
+      count,
+      isRateLimited: count > RATE_LIMIT_REQUESTS,
+      limit: RATE_LIMIT_REQUESTS,
+      window: RATE_LIMIT_WINDOW,
+    };
+  } catch (error) {
+    console.error("Error getting rate limit status:", error);
+    return {
+      count: 0,
+      isRateLimited: false,
+      limit: RATE_LIMIT_REQUESTS,
+      window: RATE_LIMIT_WINDOW,
+    };
+  }
 }

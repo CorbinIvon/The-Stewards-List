@@ -3,86 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/middleware/auth";
 import type { ApiResponse, UnassignTaskRequest } from "@/lib/types";
 
-async function canUnassignTask(
-  userId: string,
-  taskId: string,
-  targetUserId: string,
-  userRole: string
-): Promise<boolean> {
-  // Admins and managers can unassign anyone
-  if (userRole === "ADMIN" || userRole === "MANAGER") return true;
-
-  // Users can unassign themselves
-  if (userId === targetUserId) return true;
-
-  // Task owners can unassign anyone from their own tasks
-  const task = await prisma.task.findUnique({ where: { id: taskId }, select: { ownerId: true } });
-  return task?.ownerId === userId;
-}
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> {
-  try {
-    const auth = await requireAuth(request);
-    if (auth instanceof NextResponse) return auth;
-    const { user } = auth;
-
-    const body: UnassignTaskRequest = await request.json();
-    const { userId } = body;
-    if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "userId is required and must be a non-empty string",
-          timestamp: new Date().toISOString(),
-        },
-        { status: 400 }
-      );
-    }
-
-    const { id } = await params;
-    const targetUserId = userId.trim();
-
-    const task = await prisma.task.findUnique({ where: { id }, select: { id: true, title: true, ownerId: true, isDeleted: true } });
-    if (!task || (task as any).isDeleted) {
-      return NextResponse.json({ success: false, error: "Task not found", timestamp: new Date().toISOString() }, { status: 404 });
-    }
-
-    const canUnassign = await canUnassignTask(user.id, id, targetUserId, user.role);
-    if (!canUnassign) {
-      return NextResponse.json({ success: false, error: "Insufficient permissions to unassign from this task", timestamp: new Date().toISOString() }, { status: 403 });
-    }
-
-    const assignment = await prisma.taskAssignment.findUnique({
-      where: { taskId_userId: { taskId: id, userId: targetUserId } },
-      include: { user: { select: { username: true, displayName: true } } },
-    });
-
-    if (!assignment) {
-      return NextResponse.json({ success: false, error: "Assignment not found. User is not assigned to this task.", timestamp: new Date().toISOString() }, { status: 404 });
-    }
-
-    await prisma.$transaction([
-      prisma.taskAssignment.delete({ where: { taskId_userId: { taskId: id, userId: targetUserId } } }),
-      prisma.taskLog.create({ data: { taskId: id, userId: user.id, action: "UNASSIGNED", note: `Unassigned ${assignment.user.displayName || assignment.user.username}` } as any }),
-    ]);
-
-    const response: ApiResponse<{ message: string }> = { success: true, data: { message: "User successfully unassigned from task" }, timestamp: new Date().toISOString() };
-    return NextResponse.json(response, { status: 200 });
-  } catch (error: any) {
-    console.error("Error unassigning user from task:", error);
-    if (error?.code === "P2025") return NextResponse.json({ success: false, error: "Assignment not found. User is not assigned to this task.", timestamp: new Date().toISOString() }, { status: 404 });
-    if (error?.code === "P2003") return NextResponse.json({ success: false, error: "Invalid task or user reference", timestamp: new Date().toISOString() }, { status: 400 });
-    return NextResponse.json({ success: false, error: "Failed to unassign user from task", timestamp: new Date().toISOString() }, { status: 500 });
-  }
-}
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/middleware/auth";
-import type { ApiResponse } from "@/lib/types";
-
 /**
  * Check if user can unassign a user from a task
  * - Admins and managers can unassign anyone from any task
@@ -150,7 +70,7 @@ export async function POST(
     const { user } = auth;
 
     // Parse request body
-    const body = await request.json();
+    const body: UnassignTaskRequest = await request.json();
     const { userId } = body;
 
     // Validate required fields
@@ -170,7 +90,7 @@ export async function POST(
 
     // Validate task exists and is not soft-deleted
     const task = await prisma.task.findUnique({
-      where: { id: taskId, isDeleted: false },
+      where: { id, isDeleted: false },
       select: { id: true, title: true, ownerId: true },
     });
 
@@ -179,19 +99,14 @@ export async function POST(
         {
           success: false,
           error: "Task not found",
-          where: { id: taskId },
+          timestamp: new Date().toISOString(),
         },
         { status: 404 }
       );
     }
 
     // Check authorization
-    const canUnassign = await canUnassignTask(
-      user.id,
-      taskId,
-      targetUserId,
-      user.role
-    );
+    const canUnassign = await canUnassignTask(user.id, id, targetUserId, user.role);
 
     if (!canUnassign) {
       return NextResponse.json(
@@ -208,58 +123,92 @@ export async function POST(
     const assignment = await prisma.taskAssignment.findUnique({
       where: {
         taskId_userId: {
-          taskId,
+          taskId: id,
           userId: targetUserId,
         },
-      import { NextRequest, NextResponse } from "next/server";
-      import { prisma } from "@/lib/prisma";
-      import { requireAuth } from "@/lib/middleware/auth";
-      import type { ApiResponse, UnassignTaskRequest } from "@/lib/types";
+      },
+      include: {
+        user: {
+          select: {
+            username: true,
+            displayName: true,
+          },
+        },
+      },
+    });
 
-      async function canUnassignTask(userId: string, taskId: string, targetUserId: string, userRole: string): Promise<boolean> {
-        if (userRole === "ADMIN" || userRole === "MANAGER") return true;
-        if (userId === targetUserId) return true;
-        const task = await prisma.task.findUnique({ where: { id: taskId } });
-        if (!task || (task as any).isDeleted) return false;
-        return (task as any).ownerId === userId;
-      }
+    if (!assignment) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Assignment not found. User is not assigned to this task.",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 404 }
+      );
+    }
 
-      export async function POST(request: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
-        try {
-          const auth = await requireAuth(request);
-          if (auth instanceof NextResponse) return auth;
-          const { user } = auth;
+    // Delete assignment and create log entry in transaction
+    await prisma.$transaction([
+      prisma.taskAssignment.delete({
+        where: {
+          taskId_userId: {
+            taskId: id,
+            userId: targetUserId,
+          },
+        },
+      }),
+      prisma.taskLog.create({
+        data: {
+          taskId: id,
+          userId: user.id,
+          action: "UNASSIGNED",
+          note: `Unassigned ${assignment.user.displayName || assignment.user.username}`,
+        } as any,
+      }),
+    ]);
 
-          const body: UnassignTaskRequest = await request.json();
-          const { userId } = body;
-          if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
-            return NextResponse.json({ success: false, error: "userId is required and must be a non-empty string", timestamp: new Date().toISOString() }, { status: 400 });
-          }
+    const response: ApiResponse<{ message: string }> = {
+      success: true,
+      data: {
+        message: "User successfully unassigned from task",
+      },
+      timestamp: new Date().toISOString(),
+    };
 
-          const { id } = params;
-          const targetUserId = userId.trim();
-
-          const task = await prisma.task.findUnique({ where: { id } });
-          if (!task || (task as any).isDeleted) return NextResponse.json({ success: false, error: "Task not found", timestamp: new Date().toISOString() }, { status: 404 });
-
-          const canUnassign = await canUnassignTask(user.id, id, targetUserId, user.role);
-          if (!canUnassign) return NextResponse.json({ success: false, error: "Insufficient permissions to unassign from this task", timestamp: new Date().toISOString() }, { status: 403 });
-
-          const assignment = await prisma.taskAssignment.findUnique({ where: { taskId_userId: { taskId: id, userId: targetUserId } }, include: { user: { select: { username: true, displayName: true } } } });
-          if (!assignment) return NextResponse.json({ success: false, error: "Assignment not found. User is not assigned to this task.", timestamp: new Date().toISOString() }, { status: 404 });
-
-          await prisma.$transaction([
-            prisma.taskAssignment.delete({ where: { taskId_userId: { taskId: id, userId: targetUserId } } }),
-            prisma.taskLog.create({ data: { taskId: id, userId: user.id, action: "UNASSIGNED", note: `Unassigned ${assignment.user.displayName || assignment.user.username}` } as any }),
-          ]);
-
-          const response: ApiResponse<{ message: string }> = { success: true, data: { message: "User successfully unassigned from task" }, timestamp: new Date().toISOString() };
-          return NextResponse.json(response, { status: 200 });
-        } catch (error: any) {
-          console.error("Error unassigning user from task:", error);
-          if (error.code === "P2025") return NextResponse.json({ success: false, error: "Assignment not found. User is not assigned to this task.", timestamp: new Date().toISOString() }, { status: 404 });
-          if (error.code === "P2003") return NextResponse.json({ success: false, error: "Invalid task or user reference", timestamp: new Date().toISOString() }, { status: 400 });
-          return NextResponse.json({ success: false, error: "Failed to unassign user from task", timestamp: new Date().toISOString() }, { status: 500 });
-        }
-      }
+    return NextResponse.json(response, { status: 200 });
+  } catch (error: any) {
     console.error("Error unassigning user from task:", error);
+
+    if (error?.code === "P2025") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Assignment not found. User is not assigned to this task.",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 404 }
+      );
+    }
+
+    if (error?.code === "P2003") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid task or user reference",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to unassign user from task",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}

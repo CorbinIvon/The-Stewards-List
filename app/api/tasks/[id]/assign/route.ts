@@ -38,8 +38,9 @@ async function canAssignTask(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const { id } = await params;
   try {
     const auth = await requireAuth(request);
     if (auth instanceof NextResponse) return auth;
@@ -57,8 +58,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    const { id } = params;
     const task = await prisma.task.findUnique({ where: { id } });
     if (!task || (task as any).isDeleted)
       return NextResponse.json(

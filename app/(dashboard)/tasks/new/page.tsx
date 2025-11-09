@@ -22,6 +22,9 @@ import type {
   TaskPriority,
   TaskFrequency,
   UserRole,
+  Project,
+  ProjectWithRelations,
+  PaginatedResponse,
 } from "@/lib/types";
 import {
   TaskPriority as TaskPriorityEnum,
@@ -41,6 +44,7 @@ interface FormState {
   priority: TaskPriority;
   frequency: TaskFrequency | "";
   dueDate: string;
+  projectId: string | "";
 }
 
 /**
@@ -52,6 +56,7 @@ interface FormErrors {
   priority?: string;
   frequency?: string;
   dueDate?: string;
+  projectId?: string;
 }
 
 /**
@@ -60,8 +65,10 @@ interface FormErrors {
 interface PageState {
   isLoading: boolean;
   isSubmitting: boolean;
+  isLoadingProjects: boolean;
   error: string | null;
   successMessage: string | null;
+  projects: ProjectWithRelations[];
 }
 
 // ============================================================================
@@ -123,6 +130,14 @@ function validateForm(form: FormState): FormErrors {
 }
 
 /**
+ * Get display label for a project
+ */
+function getProjectLabel(project: ProjectWithRelations): string {
+  const taskCount = project.tasks?.length || 0;
+  return `${project.projectName} (${taskCount} tasks)`;
+}
+
+/**
  * Get today's date as an ISO string for minimum date validation
  */
 function getTodayISOString(): string {
@@ -166,18 +181,21 @@ export default function NewTaskPage(): React.ReactElement {
     priority: TaskPriorityEnum.MEDIUM,
     frequency: "",
     dueDate: "",
+    projectId: "",
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [pageState, setPageState] = useState<PageState>({
     isLoading: authLoading,
     isSubmitting: false,
+    isLoadingProjects: false,
     error: null,
     successMessage: null,
+    projects: [],
   });
 
   // =========================================================================
-  // PERMISSION CHECK
+  // PERMISSION CHECK & LOAD PROJECTS
   // =========================================================================
 
   useEffect(() => {
@@ -198,7 +216,32 @@ export default function NewTaskPage(): React.ReactElement {
     }
 
     setPageState((prev) => ({ ...prev, isLoading: false }));
+
+    // Load projects for the dropdown
+    loadProjects();
   }, [authLoading, currentUser, router]);
+
+  /**
+   * Load projects from API for the project selector
+   */
+  const loadProjects = async (): Promise<void> => {
+    try {
+      setPageState((prev) => ({ ...prev, isLoadingProjects: true }));
+
+      const response = await apiClient.getProjects(1, 100, false);
+      setPageState((prev) => ({
+        ...prev,
+        projects: response.data,
+        isLoadingProjects: false,
+      }));
+    } catch (err) {
+      console.error("Failed to load projects:", err);
+      setPageState((prev) => ({
+        ...prev,
+        isLoadingProjects: false,
+      }));
+    }
+  };
 
   // =========================================================================
   // FORM HANDLERS
@@ -252,6 +295,7 @@ export default function NewTaskPage(): React.ReactElement {
         priority: form.priority,
         frequency: (form.frequency as TaskFrequency | undefined) || undefined,
         dueDate: form.dueDate || undefined,
+        projectId: form.projectId || undefined,
       };
 
       // Create task via API
@@ -329,18 +373,12 @@ export default function NewTaskPage(): React.ReactElement {
 
   return (
     <div className="min-h-screen bg-slate-900 p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-2xl space-y-6">
-        {/* ===================================================================
-            BREADCRUMB NAVIGATION
-            =================================================================== */}
+      {/* =====================================================================
+          ERROR ALERT
+          ===================================================================== */}
 
-        {/* Breadcrumb removed above page header */}
-
-        {/* ===================================================================
-            ERROR ALERT
-            =================================================================== */}
-
-        {pageState.error && (
+      {pageState.error && (
+        <div className="mb-6 max-w-6xl mx-auto">
           <Alert
             variant="error"
             title="Error"
@@ -353,131 +391,275 @@ export default function NewTaskPage(): React.ReactElement {
           >
             {pageState.error}
           </Alert>
-        )}
+        </div>
+      )}
 
-        {/* ===================================================================
-            SUCCESS ALERT
-            =================================================================== */}
+      {/* =====================================================================
+          SUCCESS ALERT
+          ===================================================================== */}
 
-        {pageState.successMessage && (
+      {pageState.successMessage && (
+        <div className="mb-6 max-w-6xl mx-auto">
           <Alert variant="success" title="Success">
             {pageState.successMessage}
           </Alert>
-        )}
+        </div>
+      )}
 
-        {/* ===================================================================
-            FORM CARD
-            =================================================================== */}
+      {/* =====================================================================
+          MAIN FORM - 2 COLUMN LAYOUT (GitHub Issue Style)
+          ===================================================================== */}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Task</CardTitle>
-          </CardHeader>
+      <form onSubmit={handleSubmit} className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* ================================================================
+              LEFT COLUMN - MAIN CONTENT (70%)
+              ================================================================ */}
 
-          <form onSubmit={handleSubmit}>
-            <CardBody className="space-y-6">
-              {/* Title Field */}
-              <Input
-                label="Task Title"
+          <div className="lg:col-span-2 space-y-6">
+            {/* Title Input - Large with Border Bottom */}
+            <div>
+              <input
+                type="text"
                 name="title"
-                placeholder="Enter task title"
+                placeholder="What needs to get done?"
                 value={form.title}
                 onChange={handleInputChange}
-                error={errors.title}
-                required
                 disabled={pageState.isSubmitting}
                 maxLength={255}
+                className={`w-full text-3xl font-bold bg-transparent border-b-2 pb-3 focus:outline-none transition-colors ${
+                  errors.title
+                    ? "border-red-500 text-red-400"
+                    : "border-slate-600 text-slate-100 focus:border-blue-500"
+                } placeholder-slate-500 disabled:opacity-50 disabled:cursor-not-allowed`}
               />
+              {errors.title && (
+                <p className="text-red-400 text-sm mt-2">{errors.title}</p>
+              )}
+              <p className="text-slate-400 text-xs mt-2">
+                {form.title.length}/255 characters
+              </p>
+            </div>
 
-              {/* Description Field */}
+            {/* Description Textarea - Markdown Style */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-300">
+                Description
+              </label>
               <Textarea
-                label="Description"
                 name="description"
-                placeholder="Enter task description (optional)"
+                placeholder="Add a description... (Markdown supported: bold, italic, code blocks, lists)"
                 value={form.description}
                 onChange={handleInputChange}
                 error={errors.description}
                 disabled={pageState.isSubmitting}
-                rows={5}
+                rows={10}
                 maxLength={2000}
+                className="bg-slate-800 border border-slate-600 rounded-lg"
               />
+              <div className="flex justify-between items-center">
+                <p className="text-slate-400 text-xs">
+                  Supports Markdown formatting
+                </p>
+                <p className="text-slate-400 text-xs">
+                  {form.description.length}/2000 characters
+                </p>
+              </div>
+            </div>
+          </div>
 
-              {/* Priority Field */}
-              <Select
-                label="Priority"
+          {/* ================================================================
+              RIGHT COLUMN - SIDEBAR (30%)
+              ================================================================ */}
+
+          <div className="lg:col-span-1 space-y-1">
+            {/* Project Selector */}
+            <div className="border-b border-slate-700 pb-4 mb-4">
+              <label className="flex items-center text-sm font-medium text-slate-300 mb-3">
+                <span className="text-lg mr-2">📁</span>
+                Project
+              </label>
+              {pageState.isLoadingProjects ? (
+                <div className="flex items-center gap-2 py-2">
+                  <Spinner size="sm" />
+                  <span className="text-slate-400 text-sm">Loading projects...</span>
+                </div>
+              ) : (
+                <select
+                  name="projectId"
+                  value={form.projectId}
+                  onChange={handleInputChange}
+                  disabled={pageState.isSubmitting || pageState.isLoadingProjects}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-slate-100 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">No Project</option>
+                  {pageState.projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {getProjectLabel(project)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Priority Selector */}
+            <div className="border-b border-slate-700 pb-4 mb-4">
+              <label className="flex items-center text-sm font-medium text-slate-300 mb-3">
+                <span className="text-lg mr-2">⚡</span>
+                Priority
+              </label>
+              <select
                 name="priority"
-                options={PRIORITY_OPTIONS}
                 value={form.priority}
                 onChange={handleInputChange}
-                error={errors.priority}
                 disabled={pageState.isSubmitting}
-              />
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-slate-100 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {PRIORITY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {errors.priority && (
+                <p className="text-red-400 text-xs mt-2">{errors.priority}</p>
+              )}
+            </div>
 
-              {/* Due Date Field */}
-              <Input
-                label="Due Date"
-                name="dueDate"
+            {/* Due Date Picker */}
+            <div className="border-b border-slate-700 pb-4 mb-4">
+              <label className="flex items-center text-sm font-medium text-slate-300 mb-3">
+                <span className="text-lg mr-2">📅</span>
+                Due Date
+              </label>
+              <input
                 type="date"
+                name="dueDate"
                 value={form.dueDate}
                 onChange={handleInputChange}
-                error={errors.dueDate}
                 disabled={pageState.isSubmitting}
                 min={getTodayISOString()}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-slate-100 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
+              {errors.dueDate && (
+                <p className="text-red-400 text-xs mt-2">{errors.dueDate}</p>
+              )}
+            </div>
 
-              {/* Recurrence Pattern Field */}
-              <Select
-                label="Recurrence"
+            {/* Recurrence Selector */}
+            <div className="border-b border-slate-700 pb-4 mb-4">
+              <label className="flex items-center text-sm font-medium text-slate-300 mb-3">
+                <span className="text-lg mr-2">🔄</span>
+                Recurrence
+              </label>
+              <select
                 name="frequency"
-                options={FREQUENCY_OPTIONS}
                 value={form.frequency}
                 onChange={handleInputChange}
-                error={errors.frequency}
                 disabled={pageState.isSubmitting}
-              />
-            </CardBody>
-
-            {/* ===============================================================
-                FORM FOOTER WITH ACTIONS
-                =============================================================== */}
-
-            <div className="border-t border-slate-700 px-6 py-4 flex gap-3 justify-end">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleCancel}
-                disabled={pageState.isSubmitting}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-slate-100 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                loading={pageState.isSubmitting}
-                disabled={pageState.isSubmitting}
-              >
-                {pageState.isSubmitting ? "Creating..." : "Create Task"}
-              </Button>
+                {FREQUENCY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {errors.frequency && (
+                <p className="text-red-400 text-xs mt-2">{errors.frequency}</p>
+              )}
             </div>
-          </form>
-        </Card>
+
+            {/* Assignee Info */}
+            <div className="bg-slate-800 rounded-lg p-4 text-center border border-slate-700">
+              <p className="flex items-center justify-center text-sm font-medium text-slate-300 mb-2">
+                <span className="text-lg mr-2">👤</span>
+                Assignee
+              </p>
+              <p className="text-xs text-slate-400">
+                Will be assigned after creation
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* ===================================================================
-            HELP TEXT
+            ACTION BAR - STICKY BOTTOM
             =================================================================== */}
 
-        <Card className="bg-blue-50 border-slate-200">
-          <CardBody className="text-sm text-slate-200">
-            <p className="font-medium mb-2">Task Creation Guide</p>
-            <ul className="space-y-1 list-disc list-inside text-slate-300">
-              <li>Title is required and must be at least 3 characters</li>
-              <li>Description is optional but recommended for clarity</li>
-              <li>Priority defaults to Medium if not specified</li>
-              <li>Due dates must be in the future</li>
-              <li>Set recurrence for tasks that repeat on a schedule</li>
-            </ul>
-          </CardBody>
-        </Card>
+        <div className="mt-8 border-t border-slate-700 pt-6 flex gap-3 justify-between items-center">
+          <p className="text-xs text-slate-400">
+            Tip: Use Markdown in the description for better formatting
+          </p>
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleCancel}
+              disabled={pageState.isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={pageState.isSubmitting}
+              disabled={pageState.isSubmitting}
+            >
+              {pageState.isSubmitting ? "Creating..." : "Create Task"}
+            </Button>
+          </div>
+        </div>
+      </form>
+
+      {/* =====================================================================
+          HELP TEXT SECTION
+          ===================================================================== */}
+
+      <div className="max-w-6xl mx-auto mt-12">
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+          <h3 className="text-sm font-semibold text-slate-200 mb-4">
+            Task Creation Guide
+          </h3>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <li className="flex gap-3">
+              <span className="text-blue-400 font-semibold">•</span>
+              <span className="text-sm text-slate-400">
+                Title is required and must be at least 3 characters
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-blue-400 font-semibold">•</span>
+              <span className="text-sm text-slate-400">
+                Description is optional but recommended for clarity
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-blue-400 font-semibold">•</span>
+              <span className="text-sm text-slate-400">
+                Priority defaults to Medium if not specified
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-blue-400 font-semibold">•</span>
+              <span className="text-sm text-slate-400">
+                Due dates must be in the future
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-blue-400 font-semibold">•</span>
+              <span className="text-sm text-slate-400">
+                Set recurrence for tasks that repeat on a schedule
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-blue-400 font-semibold">•</span>
+              <span className="text-sm text-slate-400">
+                Link tasks to projects for better organization
+              </span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );

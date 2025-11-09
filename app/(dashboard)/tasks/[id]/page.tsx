@@ -29,6 +29,7 @@ import {
   toTitleCase,
   truncateAtWord,
 } from "@/lib/utils";
+import { TaskStatus as TaskStatusEnum, TaskLogAction as TaskLogActionEnum } from "@/lib/types";
 import type {
   Task,
   TaskWithOwner,
@@ -136,14 +137,14 @@ function getPriorityBadgeVariant(
  */
 function getNextStatus(currentStatus: TaskStatus): TaskStatus | null {
   switch (currentStatus) {
-    case "TODO":
-      return "IN_PROGRESS";
-    case "IN_PROGRESS":
-      return "COMPLETED";
-    case "COMPLETED":
-      return "TODO";
-    case "CANCELLED":
-      return "TODO";
+    case TaskStatusEnum.TODO:
+      return TaskStatusEnum.IN_PROGRESS;
+    case TaskStatusEnum.IN_PROGRESS:
+      return TaskStatusEnum.COMPLETED;
+    case TaskStatusEnum.COMPLETED:
+      return TaskStatusEnum.TODO;
+    case TaskStatusEnum.CANCELLED:
+      return TaskStatusEnum.TODO;
     default:
       return null;
   }
@@ -300,11 +301,11 @@ export default function TaskDetailPage(): React.ReactElement {
 
       // Create task log entry
       const action: TaskLogAction =
-        nextStatus === "COMPLETED" ? "COMPLETED" : "UPDATED";
+        nextStatus === TaskStatusEnum.COMPLETED ? TaskLogActionEnum.COMPLETED : TaskLogActionEnum.UPDATED;
       await apiClient.createTaskLog(state.task.id, {
         action,
         note:
-          nextStatus === "COMPLETED"
+          nextStatus === TaskStatusEnum.COMPLETED
             ? "Task completed"
             : `Status changed to ${nextStatus}`,
       });

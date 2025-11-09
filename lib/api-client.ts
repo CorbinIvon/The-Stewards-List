@@ -30,7 +30,39 @@ import type {
   UpdateChatRequest,
   AssignTaskRequest,
   UnassignTaskRequest,
+  Project,
+  ProjectWithRelations,
+  ProjectCollaboratorWithUser,
+  ProjectPermissionWithUser,
+  CreateProjectRequest,
+  UpdateProjectRequest,
+  PermissionType,
+  RefreshTokenRequest,
 } from "./types";
+
+// ============================================================================
+// JWT DECODING UTILITY
+// ============================================================================
+
+/**
+ * Lightweight JWT decoder (does not verify signature, only decodes)
+ * Used to extract expiration time from access token
+ */
+function decodeJwt(token: string): { exp?: number } | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    // Decode the payload (second part)
+    const payload = parts[1];
+    // Add padding if needed
+    const padded = payload + "=".repeat((4 - (payload.length % 4)) % 4);
+    const decoded = atob(padded);
+    return JSON.parse(decoded);
+  } catch (e) {
+    return null;
+  }
+}
 
 // ============================================================================
 // CONFIGURATION
@@ -42,6 +74,7 @@ const API_BASE_URL =
     : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 const TOKEN_STORAGE_KEY = "auth_token";
+const REFRESH_TOKEN_STORAGE_KEY = "authRefreshToken";
 
 // ============================================================================
 // ERROR HANDLING
@@ -88,14 +121,89 @@ export class PasswordResetRequiredError extends ApiClientError {
 class ApiClient {
   private token: string | null = null;
   private tokenExpiryTime: number | null = null;
+  private refreshToken: string | null = null;
+  private refreshInProgress: boolean = false;
+  private failedRefreshAttempts: number = 0;
+  private maxRefreshAttempts: number = 3;
 
   constructor() {
     this.loadToken();
+    this.loadRefreshToken();
   }
 
   // ========================================================================
   // TOKEN MANAGEMENT
   // ========================================================================
+
+  /**
+   * Get token expiration information
+   * @returns Object with expiresAt timestamp and secondsRemaining, or null if no token
+   */
+  getTokenExpiration(): {
+    expiresAt: number;
+    secondsRemaining: number;
+  } | null {
+    if (!this.token) return null;
+
+    const decoded = decodeJwt(this.token);
+    if (!decoded?.exp) return null;
+
+    const expiresAt = decoded.exp * 1000; // Convert seconds to milliseconds
+    const secondsRemaining = Math.floor((expiresAt - Date.now()) / 1000);
+
+    return {
+      expiresAt,
+      secondsRemaining,
+    };
+  }
+
+  /**
+   * Check if token should be refreshed
+   * @returns true if token exists and expires within next 5 minutes
+   */
+  shouldRefreshToken(): boolean {
+    const expiration = this.getTokenExpiration();
+    if (!expiration) return false;
+
+    // Refresh if less than 5 minutes remaining
+    const REFRESH_THRESHOLD_SECONDS = 5 * 60;
+    return expiration.secondsRemaining < REFRESH_THRESHOLD_SECONDS;
+  }
+
+  /**
+   * Get current access token
+   * @returns The access token or null if not available
+   */
+  getAccessToken(): string | null {
+    return this.token;
+  }
+
+  /**
+   * Set access token directly (for testing or manual management)
+   * @param token - The access token to store
+   */
+  setAccessToken(token: string): void {
+    this.token = token;
+    const decoded = decodeJwt(token);
+    if (decoded?.exp) {
+      this.tokenExpiryTime = decoded.exp * 1000;
+      // Save to localStorage
+      if (typeof window !== "undefined") {
+        const expiresAt = decoded.exp * 1000;
+        localStorage.setItem(
+          TOKEN_STORAGE_KEY,
+          JSON.stringify({ token, expiresAt })
+        );
+      }
+    }
+  }
+
+  /**
+   * Clear access token
+   */
+  clearAccessToken(): void {
+    this.clearToken();
+  }
 
   /**
    * Load token from localStorage
@@ -159,6 +267,38 @@ class ApiClient {
   }
 
   /**
+   * Load refresh token from localStorage
+   */
+  private loadRefreshToken(): void {
+    if (typeof window === "undefined") return;
+
+    const stored = localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+    if (stored) {
+      this.refreshToken = stored;
+    }
+  }
+
+  /**
+   * Store refresh token in localStorage
+   */
+  private saveRefreshToken(token: string): void {
+    if (typeof window === "undefined") return;
+
+    this.refreshToken = token;
+    localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, token);
+  }
+
+  /**
+   * Clear stored refresh token
+   */
+  private clearRefreshTokenInternal(): void {
+    if (typeof window === "undefined") return;
+
+    this.refreshToken = null;
+    localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+  }
+
+  /**
    * Check if token is expired or about to expire
    */
   private isTokenExpired(): boolean {
@@ -179,7 +319,64 @@ class ApiClient {
   // ========================================================================
 
   /**
-   * Make a typed fetch request with error handling
+   * Attempt to refresh the access token silently
+   * @returns true if refresh was successful, false otherwise
+   */
+  private async attemptTokenRefresh(): Promise<boolean> {
+    // Prevent multiple concurrent refresh attempts
+    if (this.refreshInProgress) {
+      return false;
+    }
+
+    // Prevent infinite retry loops
+    if (this.failedRefreshAttempts >= this.maxRefreshAttempts) {
+      return false;
+    }
+
+    const currentRefreshToken = this.refreshToken;
+    if (!currentRefreshToken) {
+      return false;
+    }
+
+    this.refreshInProgress = true;
+
+    try {
+      const url = `${API_BASE_URL}/api/auth/refresh`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token: currentRefreshToken }),
+      });
+
+      if (!response.ok) {
+        this.failedRefreshAttempts++;
+        return false;
+      }
+
+      const data = await response.json().catch(() => null);
+
+      if (data?.success && data?.data) {
+        // Successfully refreshed tokens
+        this.saveToken(data.data.token, data.data.expiresIn);
+        this.saveRefreshToken(data.data.refreshToken);
+        this.failedRefreshAttempts = 0; // Reset on success
+        return true;
+      }
+
+      this.failedRefreshAttempts++;
+      return false;
+    } catch (error) {
+      this.failedRefreshAttempts++;
+      return false;
+    } finally {
+      this.refreshInProgress = false;
+    }
+  }
+
+  /**
+   * Make a typed fetch request with error handling and auto-refresh interceptor
    */
   private async fetchApi<T>(
     endpoint: string,
@@ -190,6 +387,15 @@ class ApiClient {
       "Content-Type": "application/json",
       ...(options.headers as Record<string, string> | undefined),
     };
+
+    // Pre-emptive refresh: Check if token should be refreshed before making request
+    // Skip refresh for auth endpoints to avoid circular dependencies
+    const isAuthEndpoint =
+      endpoint.includes("/api/auth/") &&
+      !endpoint.includes("/api/auth/logout");
+    if (!isAuthEndpoint && this.shouldRefreshToken()) {
+      await this.attemptTokenRefresh();
+    }
 
     // Add authorization header if token exists
     const token = this.getToken();
@@ -237,8 +443,24 @@ class ApiClient {
           );
         }
 
+        // Handle 401 Unauthorized - attempt token refresh
         if (response.status === 401) {
+          // Only attempt refresh once per request
+          const refreshToken = this.refreshToken;
+          if (refreshToken && !isAuthEndpoint) {
+            // Try to refresh the token
+            const refreshSucceeded = await this.attemptTokenRefresh();
+
+            if (refreshSucceeded) {
+              // Retry original request with new token
+              return this.fetchApi<T>(endpoint, options);
+            }
+          }
+
+          // Refresh failed or no refresh token available - clear tokens and redirect
           this.clearToken();
+          this.clearRefreshTokenInternal();
+
           if (typeof window !== "undefined") {
             // Avoid redirecting to /login when already on a public/auth page
             const PUBLIC_CLIENT_PATHS = ["/", "/login", "/signup"];
@@ -370,13 +592,20 @@ class ApiClient {
   }
 
   /**
-   * Logout user
+   * Logout user - clears all tokens and notifies backend
    */
   async logout(): Promise<void> {
     try {
+      // Attempt to notify backend of logout
       await this.post("/api/auth/logout", {});
+    } catch (error) {
+      // Even if logout API call fails, still clear local tokens
+      // This ensures user is logged out locally regardless of backend state
     } finally {
+      // Clear all stored authentication data
       this.clearToken();
+      this.clearRefreshTokenInternal();
+      this.failedRefreshAttempts = 0;
     }
   }
 
@@ -386,6 +615,60 @@ class ApiClient {
   async getCurrentUser(): Promise<UserPublic> {
     const response = await this.get<ApiResponse<UserPublic>>("/api/auth/me");
     return response.data;
+  }
+
+  /**
+   * Refresh access token using refresh token
+   * @param refreshToken - The refresh token to use
+   * @returns New access token, refresh token, user, and expiration time
+   */
+  async refreshAccessToken(
+    refreshToken: string
+  ): Promise<{ accessToken: string; refreshToken: string; user: UserPublic; expiresIn: number }> {
+    const response = await this.post<
+      ApiResponse<{
+        token: string;
+        refreshToken: string;
+        user: UserPublic;
+        expiresIn: number;
+      }>
+    >("/api/auth/refresh", { token: refreshToken });
+
+    if (response.success && response.data) {
+      this.saveToken(response.data.token, response.data.expiresIn);
+      this.saveRefreshToken(response.data.refreshToken);
+      return {
+        accessToken: response.data.token,
+        refreshToken: response.data.refreshToken,
+        user: response.data.user,
+        expiresIn: response.data.expiresIn,
+      };
+    }
+
+    throw new ApiClientError("Failed to refresh token", 401);
+  }
+
+  /**
+   * Set refresh token in secure storage
+   * @param token - The refresh token to store
+   */
+  setRefreshToken(token: string): void {
+    this.saveRefreshToken(token);
+  }
+
+  /**
+   * Get refresh token from storage
+   * @returns The refresh token, or null if not found
+   */
+  getRefreshToken(): string | null {
+    return this.refreshToken;
+  }
+
+  /**
+   * Clear refresh token from storage
+   */
+  clearRefreshToken(): void {
+    this.clearRefreshTokenInternal();
   }
 
   // ========================================================================
@@ -471,15 +754,23 @@ class ApiClient {
   // ========================================================================
 
   /**
-   * Get all tasks
+   * Get all tasks with optional filters
    */
   async getTasks(
-    params?: PaginationParams & { ownerId?: string }
+    params?: PaginationParams & {
+      ownerId?: string;
+      projectId?: string;
+      status?: string;
+      priority?: string;
+    }
   ): Promise<PaginatedResponse<TaskWithOwner>> {
     const query = new URLSearchParams();
     if (params?.page) query.append("page", String(params.page));
     if (params?.pageSize) query.append("pageSize", String(params.pageSize));
     if (params?.ownerId) query.append("ownerId", params.ownerId);
+    if (params?.projectId) query.append("projectId", params.projectId);
+    if (params?.status) query.append("status", params.status);
+    if (params?.priority) query.append("priority", params.priority);
 
     const queryString = query.toString();
     const endpoint = `/api/tasks${queryString ? `?${queryString}` : ""}`;
@@ -545,6 +836,198 @@ class ApiClient {
     request: UnassignTaskRequest
   ): Promise<void> {
     await this.post(`/api/tasks/${taskId}/unassign`, request);
+  }
+
+  /**
+   * Move task to a project
+   * @param taskId - The task ID
+   * @param projectId - The project ID to move the task to
+   * @returns Updated task with owner
+   */
+  async moveTaskToProject(
+    taskId: string,
+    projectId: string
+  ): Promise<TaskWithOwner> {
+    const response = await this.post<ApiResponse<TaskWithOwner>>(
+      `/api/tasks/${taskId}/move-to-project`,
+      { projectId }
+    );
+    return response.data;
+  }
+
+  /**
+   * Unlink task from its project
+   * @param taskId - The task ID
+   * @returns Task without project association
+   */
+  async unlinkTaskFromProject(taskId: string): Promise<TaskWithOwner> {
+    const response = await this.post<ApiResponse<TaskWithOwner>>(
+      `/api/tasks/${taskId}/unlink-project`
+    );
+    return response.data;
+  }
+
+  // ========================================================================
+  // PROJECT ENDPOINTS
+  // ========================================================================
+
+  /**
+   * Get all projects with optional filters
+   * @param page - Page number for pagination
+   * @param pageSize - Number of items per page
+   * @param archived - Filter by archived status
+   * @returns Paginated list of projects with relations
+   */
+  async getProjects(
+    page?: number,
+    pageSize?: number,
+    archived?: boolean
+  ): Promise<PaginatedResponse<ProjectWithRelations>> {
+    const query = new URLSearchParams();
+    if (page !== undefined) query.append("page", String(page));
+    if (pageSize !== undefined) query.append("pageSize", String(pageSize));
+    if (archived !== undefined) query.append("archived", String(archived));
+
+    const queryString = query.toString();
+    const endpoint = `/api/projects${queryString ? `?${queryString}` : ""}`;
+
+    return this.get<PaginatedResponse<ProjectWithRelations>>(endpoint);
+  }
+
+  /**
+   * Get single project by ID
+   * @param projectId - The project ID
+   * @param includeTasks - Whether to include tasks in the response
+   * @returns Project with relations (collaborators, permissions, tasks)
+   */
+  async getProject(
+    projectId: string,
+    includeTasks?: boolean
+  ): Promise<ProjectWithRelations> {
+    const query = new URLSearchParams();
+    if (includeTasks) query.append("includeTasks", "true");
+
+    const queryString = query.toString();
+    const endpoint = `/api/projects/${projectId}${queryString ? `?${queryString}` : ""}`;
+
+    const response = await this.get<ApiResponse<ProjectWithRelations>>(endpoint);
+    return response.data;
+  }
+
+  /**
+   * Create a new project
+   * @param data - Project creation data
+   * @returns Created project with relations
+   */
+  async createProject(data: CreateProjectRequest): Promise<ProjectWithRelations> {
+    const response = await this.post<ApiResponse<ProjectWithRelations>>(
+      "/api/projects",
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Update an existing project
+   * @param projectId - The project ID
+   * @param data - Project update data
+   * @returns Updated project with relations
+   */
+  async updateProject(
+    projectId: string,
+    data: UpdateProjectRequest
+  ): Promise<ProjectWithRelations> {
+    const response = await this.patch<ApiResponse<ProjectWithRelations>>(
+      `/api/projects/${projectId}`,
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Delete a project
+   * @param projectId - The project ID
+   * @returns Success message
+   */
+  async deleteProject(projectId: string): Promise<{ message: string }> {
+    const response = await this.delete<ApiResponse<{ message: string }>>(
+      `/api/projects/${projectId}`
+    );
+    return response.data;
+  }
+
+  /**
+   * Add a collaborator to a project
+   * @param projectId - The project ID
+   * @param userId - The user ID to add as collaborator
+   * @returns Collaborator info with user details
+   */
+  async addProjectCollaborator(
+    projectId: string,
+    userId: string
+  ): Promise<ProjectCollaboratorWithUser> {
+    const response = await this.post<
+      ApiResponse<ProjectCollaboratorWithUser>
+    >(`/api/projects/${projectId}/collaborators`, { userId });
+    return response.data;
+  }
+
+  /**
+   * Remove a collaborator from a project
+   * @param projectId - The project ID
+   * @param userId - The user ID to remove
+   * @returns Success message
+   */
+  async removeProjectCollaborator(
+    projectId: string,
+    userId: string
+  ): Promise<{ message: string }> {
+    const response = await this.delete<ApiResponse<{ message: string }>>(
+      `/api/projects/${projectId}/collaborators/${userId}`
+    );
+    return response.data;
+  }
+
+  /**
+   * Get project permissions
+   * @param projectId - The project ID
+   * @param userId - Optional user ID to filter permissions
+   * @returns List of project permissions with user details
+   */
+  async getProjectPermissions(
+    projectId: string,
+    userId?: string
+  ): Promise<ProjectPermissionWithUser[]> {
+    const query = new URLSearchParams();
+    if (userId) query.append("userId", userId);
+
+    const queryString = query.toString();
+    const endpoint = `/api/projects/${projectId}/permissions${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    const response = await this.get<
+      ApiResponse<ProjectPermissionWithUser[]>
+    >(endpoint);
+    return response.data;
+  }
+
+  /**
+   * Set or update project permission for a user
+   * @param projectId - The project ID
+   * @param userId - The user ID
+   * @param permission - The permission type to grant
+   * @returns Created or updated permission with user details
+   */
+  async setProjectPermission(
+    projectId: string,
+    userId: string,
+    permission: PermissionType
+  ): Promise<ProjectPermissionWithUser> {
+    const response = await this.post<
+      ApiResponse<ProjectPermissionWithUser>
+    >(`/api/projects/${projectId}/permissions`, { userId, permission });
+    return response.data;
   }
 
   // ========================================================================

@@ -98,8 +98,9 @@ async function canAccessTaskLog(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const { id } = await params;
   try {
     // Authenticate user
     const auth = await requireAuth(request);
@@ -107,8 +108,6 @@ export async function GET(
       return auth;
     }
     const { user } = auth;
-
-    const { id } = params;
 
     // Validate ID parameter
     if (!id || !id.trim()) {
@@ -157,7 +156,7 @@ export async function GET(
     // Return task log with audit context
     const response: ApiResponse<TaskLogWithRelations> = {
       success: true,
-      data: taskLog,
+      data: taskLog as any,
       timestamp: new Date().toISOString(),
     };
 

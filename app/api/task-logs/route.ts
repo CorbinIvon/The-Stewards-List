@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
 
     const response: PaginatedResponse<TaskLogWithRelations> = {
       success: true,
-      data,
+      data: data as any,
       pagination: {
         page,
         pageSize,
@@ -396,7 +396,7 @@ export async function POST(request: NextRequest) {
 
     const response: ApiResponse<TaskLogWithRelations> = {
       success: true,
-      data: taskLog,
+      data: taskLog as any,
       timestamp: new Date().toISOString(),
     };
 
