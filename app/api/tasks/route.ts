@@ -169,6 +169,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const status = searchParams.get("status");
     const priority = searchParams.get("priority");
     const ownerId = searchParams.get("ownerId");
+    const projectId = searchParams.get("projectId");
 
     // Build where clause
     const where: any = {
@@ -192,6 +193,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
     if (ownerId) {
       where.ownerId = ownerId;
+    }
+    if (projectId) {
+      where.projectId = projectId;
     }
 
     // Fetch total count for pagination

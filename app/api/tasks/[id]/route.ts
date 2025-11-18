@@ -33,6 +33,12 @@ const taskInclude = {
       },
     },
   },
+  projectLink: {
+    select: {
+      id: true,
+      projectName: true,
+    },
+  },
 };
 
 /**
@@ -428,6 +434,9 @@ export async function PATCH(
       );
       updateData.assignDate = schedule.assignDate;
       updateData.dueBy = schedule.dueBy;
+    }
+    if (body.projectId !== undefined) {
+      updateData.projectId = body.projectId;
     }
 
     // If frequency changed (and no explicit dueDate provided), recompute schedule from now

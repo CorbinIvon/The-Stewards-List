@@ -599,7 +599,7 @@ export default function TaskDetailPage(): React.ReactElement {
                     href={`/projects/${state.task.projectId}`}
                     className="text-blue-400 hover:text-blue-300 transition font-medium"
                   >
-                    {state.task.project?.projectName || "Unknown Project"}
+                    {state.task.projectLink?.projectName || "Unknown Project"}
                   </Link>
                 ) : (
                   <p className="text-slate-400">No project assigned</p>
