@@ -69,19 +69,6 @@ export default function UniversalChat({
     deletingId: null,
   });
 
-  // ========================================================================
-  // AUTO-SCROLL EFFECT
-  // ========================================================================
-
-  const scrollToBottom = useCallback(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [state.messages, scrollToBottom]);
 
   // ========================================================================
   // FETCH MESSAGES
@@ -178,8 +165,6 @@ export default function UniversalChat({
         messageInput: "",
         isSubmitting: false,
       }));
-
-      scrollToBottom();
     } catch (err) {
       const errorMessage =
         err instanceof ApiClientError
