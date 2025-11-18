@@ -143,7 +143,7 @@ export default function TaskCard({
   assignment,
   onClick,
   className,
-}: TaskCardProps): JSX.Element {
+}: TaskCardProps): React.ReactElement {
   const isOverdue =
     task.status !== TaskStatus.COMPLETED &&
     task.dueDate &&

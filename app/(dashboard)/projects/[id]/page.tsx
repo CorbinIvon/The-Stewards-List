@@ -701,7 +701,7 @@ export default function ProjectDetailPage(): React.ReactElement {
         <Card>
           <CardHeader className="flex justify-between items-center">
             <CardTitle>Project Tasks</CardTitle>
-            <Link href={`/projects/${state.project.id}/tasks/new`}>
+            <Link href={`/tasks/new?projectId=${state.project.id}`}>
               <Button variant="primary" size="sm">
                 Add Task
               </Button>
@@ -717,7 +717,7 @@ export default function ProjectDetailPage(): React.ReactElement {
                 <p className="text-gray-500 mb-4">
                   No tasks linked to this project yet.
                 </p>
-                <Link href={`/projects/${state.project.id}/tasks/new`}>
+                <Link href={`/tasks/new?projectId=${state.project.id}`}>
                   <Button variant="primary">Create First Task</Button>
                 </Link>
               </div>

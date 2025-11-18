@@ -151,7 +151,7 @@ export default function ChatMessage({
   message,
   isCurrentUser,
   className,
-}: ChatMessageProps): JSX.Element {
+}: ChatMessageProps): React.ReactElement {
   const user = message.user;
   const displayName = user.displayName || user.username;
   const avatarColor = getUserAvatarColor(user.id);

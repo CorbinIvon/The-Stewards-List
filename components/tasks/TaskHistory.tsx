@@ -167,7 +167,7 @@ export default function TaskHistory({
         );
 
         setState({
-          logs: sortedLogs,
+          logs: sortedLogs as TaskLogWithRelations[],
           isLoading: false,
           error: null,
         });

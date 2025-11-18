@@ -18,6 +18,7 @@ import type {
   PermissionWithRelations,
   UserRole,
 } from "@/lib/types";
+import { UserRole as UserRoleEnum } from "@/lib/types";
 
 // ============================================================================
 // TYPES
@@ -73,7 +74,7 @@ async function canManagePermission(
   userRole: UserRole
 ): Promise<boolean> {
   // Admins and managers can always manage permissions
-  if (userRole === "ADMIN" || userRole === "MANAGER") {
+  if (userRole === UserRoleEnum.ADMIN || userRole === UserRoleEnum.MANAGER) {
     return true;
   }
 
@@ -178,7 +179,7 @@ export async function GET(
 
     // If filtering by userId, only admins can do this
     if (userId) {
-      if (authUser.role !== "ADMIN") {
+      if (authUser.role !== UserRoleEnum.ADMIN) {
         return NextResponse.json(
           {
             success: false,
@@ -197,7 +198,7 @@ export async function GET(
       where.taskId = taskId;
 
       // For non-admins/managers, verify they own the task
-      if (authUser.role !== "ADMIN" && authUser.role !== "MANAGER") {
+      if (authUser.role !== UserRoleEnum.ADMIN && authUser.role !== UserRoleEnum.MANAGER) {
         const task = await prisma.task.findUnique({
           where: { id: taskId },
           select: { ownerId: true, isDeleted: true },
@@ -227,7 +228,7 @@ export async function GET(
           );
         }
       }
-    } else if (authUser.role !== "ADMIN" && authUser.role !== "MANAGER") {
+    } else if (authUser.role !== UserRoleEnum.ADMIN && authUser.role !== UserRoleEnum.MANAGER) {
       // Non-admins must filter by taskId
       return NextResponse.json(
         {

@@ -58,6 +58,7 @@ async function initializeRedis(): Promise<RedisClient | null> {
     // Try importing 'redis' package first (official Node.js Redis client)
     try {
       // eslint-disable-next-line no-console
+      // @ts-ignore - redis is an optional dependency
       const redisModule: any = await import("redis");
       const { createClient } = redisModule;
       const client = createClient({ url: redisUrl });
@@ -77,6 +78,7 @@ async function initializeRedis(): Promise<RedisClient | null> {
     } catch (redisErr) {
       // Fallback to ioredis package
       // eslint-disable-next-line no-console
+      // @ts-ignore - ioredis is an optional dependency
       const ioredisModule: any = await import("ioredis");
       const Redis = ioredisModule.default || ioredisModule;
       const client = new Redis(redisUrl);

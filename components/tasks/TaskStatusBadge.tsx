@@ -76,7 +76,7 @@ function getStatusLabel(status: TaskStatus): string {
 export default function TaskStatusBadge({
   status,
   className,
-}: TaskStatusBadgeProps): JSX.Element {
+}: TaskStatusBadgeProps): React.ReactElement {
   const variant = getStatusVariant(status);
   const label = getStatusLabel(status);
 

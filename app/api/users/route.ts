@@ -5,6 +5,7 @@ import { requireAuth, requireRole, isAdmin } from "@/lib/middleware/auth";
 import { validateRequest } from "@/lib/validation";
 import { createUserSchema } from "@/lib/validation";
 import type { UserPublic, PaginatedResponse, ApiResponse } from "@/lib/types";
+import { UserRole } from "@/lib/types";
 
 // ============================================================================
 // TYPES
@@ -151,11 +152,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Require admin authentication
-    const auth = await requireRole(request, ["ADMIN"]);
+    const auth = await requireRole(request, [UserRole.ADMIN]);
     if (auth instanceof NextResponse) return auth;
 
     const body = await request.json();
-    const { email, username, displayName, password, role = "MEMBER" } = body;
+    const { email, username, displayName, password, role = UserRole.MEMBER } = body;
 
     // Validate request data
     const validation = validateRequest(
@@ -176,7 +177,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    const validRoles = ["ADMIN", "MANAGER", "MEMBER"];
+    const validRoles = [UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         {

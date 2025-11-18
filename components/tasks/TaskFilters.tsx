@@ -56,7 +56,7 @@ export default function TaskFilters({
   onFiltersChange,
   users,
   className,
-}: TaskFiltersProps): JSX.Element {
+}: TaskFiltersProps): React.ReactElement {
   /**
    * Handles search input change
    */

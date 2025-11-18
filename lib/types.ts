@@ -118,6 +118,7 @@ export interface Task {
   // When the scheduled occurrence is due by
   dueBy: Date | null;
   completedAt: Date | null;
+  projectId: string | null;
   isDeleted: boolean;
   deletedAt: Date | null;
 }
@@ -128,6 +129,7 @@ export interface Task {
 export interface TaskWithOwner extends Task {
   owner: UserPublic;
   projectLink?: ProjectInfo;
+  project?: ProjectInfo;
 }
 
 /**
@@ -225,6 +227,45 @@ export interface ChatWithRelations extends Chat {
   user: UserPublic;
   task: Task | null;
   quotedChat: Chat | null;
+}
+
+/**
+ * Universal chat model interface
+ */
+export interface UniversalChat {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  posterId: string;
+  associativeKey: string;
+  message: string;
+  isSystem: boolean;
+  isEdited: boolean;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+}
+
+/**
+ * Universal chat with related data
+ */
+export interface UniversalChatWithRelations extends UniversalChat {
+  poster: UserPublic;
+}
+
+/**
+ * Create universal chat request payload
+ */
+export interface CreateUniversalChatRequest {
+  associativeKey: string;
+  message: string;
+  isSystem?: boolean;
+}
+
+/**
+ * Update universal chat request payload
+ */
+export interface UpdateUniversalChatRequest {
+  message: string;
 }
 
 /**

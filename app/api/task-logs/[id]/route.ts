@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, isAdminOrManager } from "@/lib/middleware/auth";
 import type { ApiResponse, TaskLogWithRelations } from "@/lib/types";
+import { UserRole } from "@/lib/types";
 
 // ============================================================================
 // CONSTANTS
@@ -61,7 +62,7 @@ async function canAccessTaskLog(
   userRole: string
 ): Promise<boolean> {
   // Admins and managers can view all logs
-  if (userRole === "ADMIN" || userRole === "MANAGER") {
+  if (userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) {
     return true;
   }
 

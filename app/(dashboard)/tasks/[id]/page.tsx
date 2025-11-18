@@ -21,6 +21,7 @@ import {
   Spinner,
 } from "@/components/ui";
 import Alert from "@/components/ui/Alert";
+import { UniversalChat, Activity } from "@/components/universal";
 import { useAuthUser } from "@/lib/auth-context";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import {
@@ -498,141 +499,47 @@ export default function TaskDetailPage(): React.ReactElement {
       )}
 
       {/* ===================================================================
-          TASK HEADER WITH TITLE AND STATUS
+          TASK HEADER - GITHUB ISSUE STYLE
           =================================================================== */}
 
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <CardTitle className="text-2xl mb-3">{state.task.title}</CardTitle>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant={getStatusBadgeVariant(state.task.status)}>
-                  {getStatusLabel(state.task.status)}
-                </Badge>
-                <Badge variant={getPriorityBadgeVariant(state.task.priority)}>
-                  {getPriorityLabel(state.task.priority)}
-                </Badge>
-                {state.task.frequency && state.task.frequency !== "ONCE" && (
-                  <Badge variant="info">
-                    {toTitleCase(state.task.frequency.replace(/_/g, " "))}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            <div className="flex-shrink-0 flex gap-2">
-              {permissions.canEdit && (
-                <Link href={`/tasks/${state.task.id}/edit`}>
-                  <Button variant="secondary" size="md">
-                    Edit
-                  </Button>
-                </Link>
-              )}
-              {permissions.canDelete && (
-                <Button
-                  variant="danger"
-                  size="md"
-                  onClick={() =>
-                    setState((prev) => ({
-                      ...prev,
-                      showDeleteConfirm: true,
-                    }))
-                  }
-                  disabled={state.isDeleting || state.isUpdatingStatus}
-                >
-                  Delete
-                </Button>
-              )}
-            </div>
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          {/* Title and ID */}
+          <div className="mb-4">
+            <h1 className="text-4xl font-bold text-white mb-2 break-words">{state.task.title}</h1>
+            <p className="text-slate-400">#{state.task.id.slice(0, 8)}</p>
           </div>
-        </CardHeader>
-      </Card>
 
-      {/* ===================================================================
-          TASK DETAILS
-          =================================================================== */}
+          {/* Status and Priority Badges */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            <Badge variant={getStatusBadgeVariant(state.task.status)}>
+              {getStatusLabel(state.task.status)}
+            </Badge>
+            <Badge variant={getPriorityBadgeVariant(state.task.priority)}>
+              {getPriorityLabel(state.task.priority)}
+            </Badge>
+            {state.task.frequency && state.task.frequency !== "ONCE" && (
+              <Badge variant="info">
+                {toTitleCase(state.task.frequency.replace(/_/g, " "))}
+              </Badge>
+            )}
+          </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Details</CardTitle>
-        </CardHeader>
-        <CardBody className="space-y-6">
           {/* Description */}
           {state.task.description && (
-            <div>
-              <h4 className="font-medium text-gray-900 mb-2">Description</h4>
-              <p className="text-gray-700 whitespace-pre-wrap">
-                {state.task.description}
-              </p>
-            </div>
+            <Card className="mb-6">
+              <CardBody className="prose prose-sm max-w-none">
+                <p className="text-slate-100 whitespace-pre-wrap leading-relaxed">
+                  {state.task.description}
+                </p>
+              </CardBody>
+            </Card>
           )}
 
-          {/* Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Owner */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-2">Owner</h4>
-              <p className="text-gray-700">
-                {state.task.owner?.username || "Unknown"}
-              </p>
-              {state.task.owner?.email && (
-                <p className="text-sm text-gray-500">{state.task.owner.email}</p>
-              )}
-            </div>
-
-            {/* Created Date */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-2">Created</h4>
-              <p className="text-gray-700">
-                {formatDateTime(state.task.createdAt)}
-              </p>
-            </div>
-
-            {/* Due Date */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-2">Due Date</h4>
-              {state.task.dueDate ? (
-                <p className="text-gray-700">{formatDate(state.task.dueDate)}</p>
-              ) : (
-                <p className="text-gray-500">No due date set</p>
-              )}
-            </div>
-
-            {/* Completed Date */}
-            {state.task.completedAt && (
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Completed</h4>
-                <p className="text-gray-700">
-                  {formatDateTime(state.task.completedAt)}
-                </p>
-              </div>
-            )}
-
-            {/* Last Updated */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-2">Last Updated</h4>
-              <p className="text-gray-700">
-                {formatDateTime(state.task.updatedAt)}
-              </p>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* ===================================================================
-          STATUS ACTIONS
-          =================================================================== */}
-
-      {permissions.canUpdateStatus && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Status Actions</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">
-                Current status: <span className="font-medium">{getStatusLabel(state.task.status)}</span>
-              </p>
+          {/* Action Buttons */}
+          <div className="flex gap-2 mb-6">
+            {permissions.canUpdateStatus && (
               <Button
                 variant="primary"
                 onClick={handleStatusChange}
@@ -640,32 +547,121 @@ export default function TaskDetailPage(): React.ReactElement {
                 loading={state.isUpdatingStatus}
               >
                 {state.task.status === "COMPLETED"
-                  ? "Mark as TODO"
+                  ? "Reopen"
                   : state.task.status === "TODO"
-                    ? "Mark as In Progress"
-                    : "Mark as Complete"}
+                    ? "Start Progress"
+                    : "Mark Complete"}
               </Button>
-            </div>
-          </CardBody>
-        </Card>
-      )}
+            )}
+            {permissions.canEdit && (
+              <Link href={`/tasks/${state.task.id}/edit`}>
+                <Button variant="secondary">Edit</Button>
+              </Link>
+            )}
+            {permissions.canDelete && (
+              <Button
+                variant="danger"
+                onClick={() =>
+                  setState((prev) => ({
+                    ...prev,
+                    showDeleteConfirm: true,
+                  }))
+                }
+                disabled={state.isDeleting || state.isUpdatingStatus}
+              >
+                Delete
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar - Metadata */}
+        <div className="w-full lg:w-72 flex-shrink-0">
+          {/* Details Panel */}
+          <Card className="sticky top-6">
+            <CardBody className="space-y-4 text-sm">
+              {/* Owner */}
+              <div className="pb-4 border-b border-slate-700">
+                <p className="text-slate-400 font-medium mb-2">Owner</p>
+                <p className="text-slate-100 font-medium">
+                  {state.task.owner?.username || "Unknown"}
+                </p>
+                {state.task.owner?.email && (
+                  <p className="text-slate-400 text-xs">{state.task.owner.email}</p>
+                )}
+              </div>
+
+              {/* Project */}
+              <div className="pb-4 border-b border-slate-700">
+                <p className="text-slate-400 font-medium mb-2">Project</p>
+                {state.task.projectId ? (
+                  <Link
+                    href={`/projects/${state.task.projectId}`}
+                    className="text-blue-400 hover:text-blue-300 transition font-medium"
+                  >
+                    {state.task.project?.projectName || "Unknown Project"}
+                  </Link>
+                ) : (
+                  <p className="text-slate-400">No project assigned</p>
+                )}
+              </div>
+
+              {/* Due Date */}
+              <div className="pb-4 border-b border-slate-700">
+                <p className="text-slate-400 font-medium mb-2">Due Date</p>
+                {state.task.dueDate ? (
+                  <p className="text-slate-100">{formatDate(state.task.dueDate)}</p>
+                ) : (
+                  <p className="text-slate-400">No due date</p>
+                )}
+              </div>
+
+              {/* Created */}
+              <div className="pb-4 border-b border-slate-700">
+                <p className="text-slate-400 font-medium mb-2">Created</p>
+                <p className="text-slate-100">{formatDateTime(state.task.createdAt)}</p>
+              </div>
+
+              {/* Updated */}
+              <div className="pb-4 border-b border-slate-700">
+                <p className="text-slate-400 font-medium mb-2">Updated</p>
+                <p className="text-slate-100">{formatDateTime(state.task.updatedAt)}</p>
+              </div>
+
+              {/* Completed */}
+              {state.task.completedAt && (
+                <div className="pb-4 border-b border-slate-700">
+                  <p className="text-slate-400 font-medium mb-2">Completed</p>
+                  <p className="text-slate-100">{formatDateTime(state.task.completedAt)}</p>
+                </div>
+              )}
+
+              {/* Task ID */}
+              <div>
+                <p className="text-slate-400 font-medium mb-2">ID</p>
+                <code className="bg-slate-800 px-2 py-1 rounded text-xs text-slate-300 break-all">
+                  {state.task.id}
+                </code>
+              </div>
+            </CardBody>
+          </Card>
+        </div>
+      </div>
 
       {/* ===================================================================
-          PLACEHOLDER: TASK HISTORY & CHAT
+          ACTIVITY & CHAT SECTION
           =================================================================== */}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Activity & Comments</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <p className="text-gray-500 text-center py-8">
-            Task history and comments will be displayed here.
-            <br />
-            Components: TaskHistory, TaskChat (coming soon)
-          </p>
-        </CardBody>
-      </Card>
+      <div className="space-y-6">
+        {/* Activity Timeline */}
+        <Activity associativeKey={`tasks/${state.task.id}`} />
+
+        {/* Chat/Comments */}
+        <UniversalChat
+          associativeKey={`tasks/${state.task.id}`}
+          className="lg:col-span-2"
+        />
+      </div>
     </div>
   );
 }

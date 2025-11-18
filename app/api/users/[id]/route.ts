@@ -7,6 +7,7 @@ import {
   isAdmin,
 } from "@/lib/middleware/auth";
 import type { UserPublic, UserRole, ApiResponse, AuthUser } from "@/lib/types";
+import { UserRole as UserRoleEnum } from "@/lib/types";
 
 // ============================================================================
 // TYPES
@@ -53,7 +54,11 @@ const userSelect = {
 /**
  * Valid user roles
  */
-const VALID_ROLES: UserRole[] = ["ADMIN", "MANAGER", "MEMBER"];
+const VALID_ROLES: UserRole[] = [
+  UserRoleEnum.ADMIN,
+  UserRoleEnum.MANAGER,
+  UserRoleEnum.MEMBER,
+];
 
 /**
  * Resolve an id from params which may be a plain object or a Promise
@@ -283,7 +288,7 @@ export async function PATCH(
     }
 
     // Require ownership or admin role
-    const auth = await requireOwnerOrRole(request, id, ["ADMIN"]);
+    const auth = await requireOwnerOrRole(request, id, [UserRoleEnum.ADMIN]);
     if (auth instanceof NextResponse) return auth;
     const { user: requestingUser } = auth;
 
@@ -435,7 +440,7 @@ export async function DELETE(
 ) {
   try {
     // Require admin role
-    const auth = await requireRole(request, ["ADMIN"]);
+    const auth = await requireRole(request, [UserRoleEnum.ADMIN]);
     if (auth instanceof NextResponse) return auth;
     const { user: requestingUser } = auth;
 

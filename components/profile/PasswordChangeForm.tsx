@@ -11,8 +11,8 @@ import { apiClient, ApiClientError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { Card, CardBody, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Alert } from "@/components/ui/Alert";
+import Input from "@/components/ui/Input";
+import Alert from "@/components/ui/Alert";
 
 // ============================================================================
 // TYPES

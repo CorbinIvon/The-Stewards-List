@@ -12,7 +12,7 @@ import type {
   PaginatedResponse,
   TaskLogWithRelations,
 } from "@/lib/types";
-import { TaskLogAction } from "@/lib/types";
+import { TaskLogAction, UserRole } from "@/lib/types";
 
 // ============================================================================
 // CONSTANTS
@@ -47,7 +47,7 @@ async function canAccessTaskLogs(
   taskId: string,
   userRole: string
 ): Promise<boolean> {
-  if (userRole === "ADMIN" || userRole === "MANAGER") {
+  if (userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) {
     return true;
   }
 

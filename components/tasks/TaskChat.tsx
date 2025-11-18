@@ -15,7 +15,7 @@ import React, {
 } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { apiClient, ApiClientError } from "@/lib/api-client";
-import type { Chat, CreateChatRequest } from "@/lib/types";
+import type { ChatWithRelations, CreateChatRequest } from "@/lib/types";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
@@ -42,7 +42,7 @@ export interface TaskChatProps {
  * Internal state for component
  */
 interface ChatState {
-  messages: Chat[];
+  messages: ChatWithRelations[];
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
@@ -112,7 +112,7 @@ export default function TaskChat({
 
         setState((prev) => ({
           ...prev,
-          messages: response.data,
+          messages: response.data as ChatWithRelations[],
           isLoading: false,
         }));
       } catch (err) {
@@ -199,7 +199,7 @@ export default function TaskChat({
         // Update messages list with new message
         setState((prev) => ({
           ...prev,
-          messages: [...prev.messages, newMessage],
+          messages: [...prev.messages, newMessage as ChatWithRelations],
           messageInput: "",
           isSubmitting: false,
         }));
@@ -284,7 +284,7 @@ export default function TaskChat({
         {!state.isLoading &&
           state.messages.length > 0 &&
           state.messages.map((message) => {
-            const isCurrentUser = user && message.userId === user.id;
+            const isCurrentUser = !!(user && message.userId === user.id);
 
             return (
               <div

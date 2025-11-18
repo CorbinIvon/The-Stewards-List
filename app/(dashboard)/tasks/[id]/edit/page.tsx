@@ -40,6 +40,7 @@ import type {
   TaskWithOwner,
   UserRole,
   UpdateTaskRequest,
+  ProjectWithRelations,
 } from "@/lib/types";
 
 // ============================================================================
@@ -56,6 +57,7 @@ interface FormState {
   priority: TaskPriority;
   frequency: TaskFrequency;
   dueDate: string;
+  projectId: string | "";
 }
 
 /**
@@ -68,6 +70,7 @@ interface FormErrors {
   priority?: string;
   frequency?: string;
   dueDate?: string;
+  projectId?: string;
 }
 
 /**
@@ -77,10 +80,12 @@ interface PageState {
   task: TaskWithOwner | null;
   isLoadingTask: boolean;
   isSubmitting: boolean;
+  isLoadingProjects: boolean;
   error: string | null;
   successMessage: string | null;
   notFound: boolean;
   permissionDenied: boolean;
+  projects: ProjectWithRelations[];
 }
 
 // ============================================================================
@@ -238,10 +243,12 @@ export default function EditTaskPage({
     task: null,
     isLoadingTask: true,
     isSubmitting: false,
+    isLoadingProjects: false,
     error: null,
     successMessage: null,
     notFound: false,
     permissionDenied: false,
+    projects: [],
   });
 
   const [formData, setFormData] = useState<FormState>({
@@ -251,6 +258,7 @@ export default function EditTaskPage({
     priority: TaskPriority.MEDIUM,
     frequency: TaskFrequency.ONCE,
     dueDate: "",
+    projectId: "",
   });
 
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -258,6 +266,28 @@ export default function EditTaskPage({
   // =========================================================================
   // DATA FETCHING
   // =========================================================================
+
+  /**
+   * Load projects from API for the project selector
+   */
+  const loadProjects = async (): Promise<void> => {
+    try {
+      setPageState((prev) => ({ ...prev, isLoadingProjects: true }));
+
+      const response = await apiClient.getProjects(1, 100, false);
+      setPageState((prev) => ({
+        ...prev,
+        projects: response.data,
+        isLoadingProjects: false,
+      }));
+    } catch (err) {
+      console.error("Failed to load projects:", err);
+      setPageState((prev) => ({
+        ...prev,
+        isLoadingProjects: false,
+      }));
+    }
+  };
 
   /**
    * Fetch task data on component mount
@@ -293,6 +323,7 @@ export default function EditTaskPage({
           priority: task.priority,
           frequency: task.frequency || TaskFrequency.ONCE,
           dueDate: formatDateForInput(task.dueDate),
+          projectId: task.projectId || "",
         });
 
         setPageState((prev) => ({
@@ -331,6 +362,7 @@ export default function EditTaskPage({
 
     if (taskId) {
       fetchTask();
+      loadProjects();
     }
   }, [taskId, user?.id, user?.role]);
 
@@ -393,6 +425,7 @@ export default function EditTaskPage({
         frequency:
           formData.frequency !== TaskFrequency.ONCE ? formData.frequency : undefined,
         dueDate: formData.dueDate || null,
+        projectId: formData.projectId || null,
       };
 
       // Submit update
@@ -644,6 +677,23 @@ export default function EditTaskPage({
               onChange={handleInputChange}
               error={formErrors.dueDate}
               disabled={pageState.isSubmitting}
+            />
+
+            {/* Project Field */}
+            <Select
+              label="Project"
+              name="projectId"
+              options={[
+                { value: "", label: "No Project" },
+                ...pageState.projects.map((project) => ({
+                  value: project.id,
+                  label: `${project.projectName} (${project.tasks?.length || 0} tasks)`,
+                })),
+              ]}
+              value={formData.projectId}
+              onChange={handleInputChange}
+              error={formErrors.projectId}
+              disabled={pageState.isSubmitting || pageState.isLoadingProjects}
             />
 
             {/* Form Actions */}

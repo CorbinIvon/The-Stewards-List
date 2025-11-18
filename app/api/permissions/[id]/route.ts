@@ -14,7 +14,9 @@ import type {
   Permission,
   PermissionType,
   PermissionWithRelations,
+  UserRole,
 } from "@/lib/types";
+import { UserRole as UserRoleEnum } from "@/lib/types";
 
 // ============================================================================
 // TYPES
@@ -40,7 +42,7 @@ interface PermissionInclude {
 
 interface AuthUserData {
   id: string;
-  role: "ADMIN" | "MANAGER" | "MEMBER";
+  role: UserRole;
 }
 
 // ============================================================================
@@ -138,7 +140,7 @@ function canViewPermission(
   userRole: string
 ): boolean {
   // Admins and managers can view all permissions
-  if (userRole === "ADMIN" || userRole === "MANAGER") {
+  if (userRole === UserRoleEnum.ADMIN || userRole === UserRoleEnum.MANAGER) {
     return true;
   }
 
@@ -169,7 +171,7 @@ function canModifyPermission(
   userRole: string
 ): boolean {
   // Admins and managers can modify all permissions
-  if (userRole === "ADMIN" || userRole === "MANAGER") {
+  if (userRole === UserRoleEnum.ADMIN || userRole === UserRoleEnum.MANAGER) {
     return true;
   }
 
@@ -193,7 +195,7 @@ function canDeletePermission(
   userRole: string
 ): boolean {
   // Admins and managers can delete all permissions
-  if (userRole === "ADMIN" || userRole === "MANAGER") {
+  if (userRole === UserRoleEnum.ADMIN || userRole === UserRoleEnum.MANAGER) {
     return true;
   }
 

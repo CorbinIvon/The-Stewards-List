@@ -46,7 +46,7 @@ export interface CardFooterProps {
  * @param children - Card content
  * @param className - Additional CSS classes to apply
  */
-export function Card({ children, className }: CardProps): JSX.Element {
+export function Card({ children, className }: CardProps): React.ReactElement {
   return (
     <div
       className={cn(
@@ -67,7 +67,7 @@ export function Card({ children, className }: CardProps): JSX.Element {
 export function CardHeader({
   children,
   className,
-}: CardHeaderProps): JSX.Element {
+}: CardHeaderProps): React.ReactElement {
   return <div className={cn("px-6 py-4", className)}>{children}</div>;
 }
 
@@ -79,7 +79,7 @@ export function CardHeader({
 export function CardTitle({
   children,
   className,
-}: CardTitleProps): JSX.Element {
+}: CardTitleProps): React.ReactElement {
   return (
     <h3 className={cn("text-lg font-semibold text-slate-100", className)}>
       {children}
@@ -92,7 +92,7 @@ export function CardTitle({
  * @param children - Body content
  * @param className - Additional CSS classes to apply
  */
-export function CardBody({ children, className }: CardBodyProps): JSX.Element {
+export function CardBody({ children, className }: CardBodyProps): React.ReactElement {
   return <div className={cn("px-6 py-4", className)}>{children}</div>;
 }
 
@@ -104,7 +104,7 @@ export function CardBody({ children, className }: CardBodyProps): JSX.Element {
 export function CardFooter({
   children,
   className,
-}: CardFooterProps): JSX.Element {
+}: CardFooterProps): React.ReactElement {
   return (
     <div className={cn("border-t border-slate-700 px-6 py-4", className)}>
       {children}

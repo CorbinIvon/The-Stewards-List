@@ -36,6 +36,7 @@ model User {
   permissions  Permission[]
   taskLogs     TaskLog[]
   chats        Chat[]
+  universalChats UniversalChat[]
   projectsCreated Project[] @relation("ProjectCreator")
   projectCollaborations ProjectCollaborator[]
   projectPermissions ProjectPermission[]
@@ -287,4 +288,26 @@ model Chat {
   @@index([taskId])
   @@index([createdAt])
   @@map("chats")
+}
+
+model UniversalChat {
+  id             String    @id @default(cuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  posterId       String
+  associativeKey String
+  message        String    @db.Text
+  isSystem       Boolean   @default(false)
+  isEdited       Boolean   @default(false)
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+
+  // Relations
+  poster         User      @relation(fields: [posterId], references: [id], onDelete: Cascade)
+
+  @@index([associativeKey])
+  @@index([posterId])
+  @@index([isSystem])
+  @@index([createdAt])
+  @@map("universal_chats")
 }

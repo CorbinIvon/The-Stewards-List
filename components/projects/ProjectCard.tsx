@@ -91,7 +91,7 @@ export default function ProjectCard({
   project,
   onClick,
   className,
-}: ProjectCardProps): JSX.Element {
+}: ProjectCardProps): React.ReactElement {
   const isArchived = project.archived;
   const relativeCreationTime = calculateRelativeCreationTime(project.createdAt);
   const creatorInitials = getInitials(

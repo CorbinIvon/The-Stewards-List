@@ -90,7 +90,7 @@ export default function CollaboratorsList({
   onCollaboratorAdded,
   onCollaboratorRemoved,
   onPermissionChanged,
-}: CollaboratorsListProps): JSX.Element {
+}: CollaboratorsListProps): React.ReactElement {
   // State management
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isChangePermissionModalOpen, setIsChangePermissionModalOpen] =

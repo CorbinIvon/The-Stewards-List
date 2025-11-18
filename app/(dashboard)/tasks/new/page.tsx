@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Card,
@@ -171,8 +171,12 @@ function hasPermissionToCreateTasks(userRole: UserRole | undefined): boolean {
  */
 export default function NewTaskPage(): React.ReactElement {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const currentUser = useAuthUser();
   const { isLoading: authLoading } = useAuth();
+
+  // Get projectId from query parameter if provided
+  const projectIdParam = searchParams?.get("projectId") || "";
 
   // Form state
   const [form, setForm] = useState<FormState>({
@@ -181,7 +185,7 @@ export default function NewTaskPage(): React.ReactElement {
     priority: TaskPriorityEnum.MEDIUM,
     frequency: "",
     dueDate: "",
-    projectId: "",
+    projectId: projectIdParam,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});

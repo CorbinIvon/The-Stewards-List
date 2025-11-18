@@ -17,6 +17,7 @@ import type {
   Permission,
   TaskLog,
   Chat,
+  UniversalChatWithRelations,
   LoginRequest,
   LoginResponse,
   SignupRequest,
@@ -28,6 +29,8 @@ import type {
   CreateTaskLogRequest,
   CreateChatRequest,
   UpdateChatRequest,
+  CreateUniversalChatRequest,
+  UpdateUniversalChatRequest,
   AssignTaskRequest,
   UnassignTaskRequest,
   Project,
@@ -1166,6 +1169,65 @@ class ApiClient {
    */
   async deleteChat(chatId: string): Promise<void> {
     await this.delete(`/api/chats/${chatId}`);
+  }
+
+  // =========================================================================
+  // UNIVERSAL CHATS
+  // =========================================================================
+
+  /**
+   * Fetch universal chat messages by associative key with pagination
+   */
+  async getUniversalChats(
+    associativeKey: string,
+    pagination?: { page?: number; pageSize?: number }
+  ): Promise<PaginatedResponse<UniversalChatWithRelations>> {
+    const params = new URLSearchParams({
+      associativeKey,
+      page: String(pagination?.page || 1),
+      pageSize: String(pagination?.pageSize || 50),
+    });
+    const response = await this.get<PaginatedResponse<UniversalChatWithRelations>>(
+      `/api/universal-chats?${params}`
+    );
+    return response;
+  }
+
+  /**
+   * Create universal chat message
+   */
+  async createUniversalChat(
+    request: CreateUniversalChatRequest
+  ): Promise<UniversalChatWithRelations> {
+    const response = await this.post<ApiResponse<UniversalChatWithRelations>>(
+      "/api/universal-chats",
+      request
+    );
+    return response.data;
+  }
+
+  /**
+   * Update universal chat message
+   */
+  async updateUniversalChat(
+    chatId: string,
+    request: UpdateUniversalChatRequest
+  ): Promise<UniversalChatWithRelations> {
+    const response = await this.put<ApiResponse<UniversalChatWithRelations>>(
+      `/api/universal-chats/${chatId}`,
+      request
+    );
+    return response.data;
+  }
+
+  /**
+   * Delete universal chat message
+   */
+  async deleteUniversalChat(chatId: string): Promise<UniversalChatWithRelations> {
+    const response = await this.delete<ApiResponse<UniversalChatWithRelations>>(
+      `/api/universal-chats/${chatId}`
+    );
+    return response.data;
   }
 }
 
