@@ -201,7 +201,7 @@ export function Sidebar({
   const menuItems: MenuItem[] = [
     {
       label: "Dashboard",
-      href: "/",
+      href: "/dashboard",
       icon: "dashboard",
     },
     {
