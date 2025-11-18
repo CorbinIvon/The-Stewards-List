@@ -269,7 +269,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Parse request body
     const body = await request.json();
-    const { title, description, priority, frequency, dueDate } = body;
+    const { title, description, priority, frequency, dueDate, projectId } = body;
 
     // Validate required fields
     if (!title || typeof title !== "string" || title.trim().length === 0) {
@@ -361,6 +361,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       assignDate: schedule.assignDate,
       dueBy: schedule.dueBy,
       status: "TODO",
+      projectId: projectId || null,
     };
 
     // Create task and initial log in transaction
