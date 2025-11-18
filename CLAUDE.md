@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Quick Links
+
+- **High-Level Overview**: See [`docs/00_HIGH_LEVEL_OVERVIEW.md`](docs/00_HIGH_LEVEL_OVERVIEW.md) for a user-friendly introduction to the project, components, pages, and data types
+- **This File**: Detailed architectural guidance and API reference for developers
+
 ## Project Overview
 
 **The Stewards List** is a Next.js + Prisma web application for home organization featuring user management, task management, project collaboration, and team communication.
