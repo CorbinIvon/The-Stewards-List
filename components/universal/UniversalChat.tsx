@@ -369,7 +369,7 @@ export default function UniversalChat({
               return (
                 <div
                   key={message.id}
-                  className={cn("flex gap-3", isOwner ? "flex-row-reverse" : "")}
+                  className={cn("flex gap-3 border-2 border-slate-800 border-b-indigo-500 p-4 ", isOwner ? "flex-row-reverse" : "")}
                 >
                   {/* Avatar */}
                   <div

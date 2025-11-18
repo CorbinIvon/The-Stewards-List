@@ -21,7 +21,7 @@ import {
   Spinner,
 } from "@/components/ui";
 import Alert from "@/components/ui/Alert";
-import { UniversalChat, Activity } from "@/components/universal";
+import { UniversalChat } from "@/components/universal";
 import { useAuthUser } from "@/lib/auth-context";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import {
@@ -652,16 +652,11 @@ export default function TaskDetailPage(): React.ReactElement {
           ACTIVITY & CHAT SECTION
           =================================================================== */}
 
-      <div className="space-y-6">
-        {/* Activity Timeline */}
-        <Activity associativeKey={`tasks/${state.task.id}`} />
-
-        {/* Chat/Comments */}
-        <UniversalChat
-          associativeKey={`tasks/${state.task.id}`}
-          className="lg:col-span-2"
-        />
-      </div>
+      {/* Chat/Comments */}
+      <UniversalChat
+        associativeKey={`tasks/${state.task.id}`}
+        className="lg:col-span-2"
+      />
     </div>
   );
 }
