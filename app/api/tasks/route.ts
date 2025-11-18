@@ -35,6 +35,13 @@ const taskInclude = {
       },
     },
   },
+  projectLink: {
+    select: {
+      id: true,
+      projectName: true,
+      archived: true,
+    },
+  },
 };
 
 /**

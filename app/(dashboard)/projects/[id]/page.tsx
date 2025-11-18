@@ -202,6 +202,7 @@ export default function ProjectDetailPage(): React.ReactElement {
 
   /**
    * Fetch tasks for the project
+   * This runs once when project is loaded and again when tasks tab is clicked
    */
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
@@ -233,10 +234,11 @@ export default function ProjectDetailPage(): React.ReactElement {
       }
     };
 
-    if (state.activeTab === "tasks") {
+    // Fetch tasks when project loads or when tasks tab is clicked
+    if (state.project?.id && (state.activeTab === "tasks" || state.tasks.length === 0)) {
       fetchTasks();
     }
-  }, [state.activeTab, state.project?.id]);
+  }, [state.project?.id, state.activeTab]);
 
   // =========================================================================
   // EVENT HANDLERS
@@ -590,7 +592,7 @@ export default function ProjectDetailPage(): React.ReactElement {
               : "text-gray-500 hover:text-gray-400"
           }`}
         >
-          Tasks ({state.project.tasks?.length || 0})
+          Tasks ({state.tasks.length || 0})
         </button>
         <button
           onClick={() => handleTabChange("collaborators")}
@@ -684,7 +686,7 @@ export default function ProjectDetailPage(): React.ReactElement {
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Tasks</h4>
                   <p className="text-gray-700">
-                    {state.project.tasks?.length || 0}
+                    {state.tasks.length || 0}
                   </p>
                 </div>
               </div>

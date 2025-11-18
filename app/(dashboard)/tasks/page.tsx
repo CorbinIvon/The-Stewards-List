@@ -140,6 +140,11 @@ function TaskCard({ task, onClick }: TaskCardProps): React.ReactElement {
                   task.owner.username ||
                   task.owner.email}
               </p>
+              {task.projectLink && (
+                <p className="text-xs text-gray-400 mt-1">
+                  in <span className="font-medium">{task.projectLink.projectName}</span>
+                </p>
+              )}
             </div>
             <div className="flex gap-2 flex-shrink-0">
               <Badge variant={getStatusBadgeVariant(task.status)} size="sm">

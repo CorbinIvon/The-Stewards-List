@@ -84,11 +84,13 @@ export default function UniversalChat({
   }, [state.messages, scrollToBottom]);
 
   // ========================================================================
-  // FETCH MESSAGES ON MOUNT
+  // FETCH MESSAGES
   // ========================================================================
 
-  useEffect(() => {
-    const fetchMessages = async (): Promise<void> => {
+  const PAGE_SIZE = 20;
+
+  const fetchMessagesForPage = useCallback(
+    async (page: number): Promise<void> => {
       try {
         setState((prev) => ({
           ...prev,
@@ -97,17 +99,22 @@ export default function UniversalChat({
         }));
 
         const response = await apiClient.getUniversalChats(associativeKey, {
-          page: 1,
-          pageSize: 50,
+          page,
+          pageSize: PAGE_SIZE,
         });
 
         setState((prev) => ({
           ...prev,
           messages: response.data,
           hasMore: response.pagination.hasNextPage,
-          page: 1,
+          page,
           isLoading: false,
         }));
+
+        // Scroll to top of messages container
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = 0;
+        }
       } catch (err) {
         const errorMessage =
           err instanceof ApiClientError
@@ -124,10 +131,13 @@ export default function UniversalChat({
 
         console.error("Error fetching messages:", err);
       }
-    };
+    },
+    [associativeKey]
+  );
 
-    fetchMessages();
-  }, [associativeKey]);
+  useEffect(() => {
+    fetchMessagesForPage(1);
+  }, [associativeKey, fetchMessagesForPage]);
 
   // ========================================================================
   // HANDLE MESSAGE SUBMISSION
@@ -481,6 +491,31 @@ export default function UniversalChat({
           {/* Auto-scroll target */}
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Pagination Controls */}
+        {!state.isLoading && state.messages.length > 0 && (
+          <div className="flex items-center justify-between gap-2 px-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => fetchMessagesForPage(state.page - 1)}
+              disabled={state.page === 1 || state.isLoading}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-slate-400">
+              Page {state.page}
+            </span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => fetchMessagesForPage(state.page + 1)}
+              disabled={!state.hasMore || state.isLoading}
+            >
+              Next
+            </Button>
+          </div>
+        )}
 
         {/* Message Input Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
