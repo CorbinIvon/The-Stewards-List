@@ -352,7 +352,7 @@ export default function EditProjectPage({
 
         <Card>
           <CardBody className="text-center py-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-gray-300 mb-2">
               Project Not Found
             </h2>
             <p className="text-gray-600 mb-6">
@@ -381,7 +381,7 @@ export default function EditProjectPage({
 
         <Card>
           <CardBody className="text-center py-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-gray-300 mb-2">
               Access Denied
             </h2>
             <p className="text-gray-600 mb-6">
@@ -424,7 +424,7 @@ export default function EditProjectPage({
             <span>/</span>
           </>
         )}
-        <span className="text-gray-900 font-medium">Edit</span>
+        <span className="text-gray-300 font-medium">Edit</span>
       </div>
 
       {/* ===================================================================
@@ -532,7 +532,7 @@ export default function EditProjectPage({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-600 font-medium">Creator</p>
-                <p className="text-gray-900">
+                <p className="text-gray-300">
                   {pageState.project.creator?.displayName ||
                     pageState.project.creator?.username ||
                     "Unknown"}
@@ -540,31 +540,31 @@ export default function EditProjectPage({
               </div>
               <div>
                 <p className="text-gray-600 font-medium">Created</p>
-                <p className="text-gray-900">
+                <p className="text-gray-300">
                   {new Date(pageState.project.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 font-medium">Last Updated</p>
-                <p className="text-gray-900">
+                <p className="text-gray-300">
                   {new Date(pageState.project.updatedAt).toLocaleDateString()}
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 font-medium">Project ID</p>
-                <p className="text-gray-900 font-mono text-xs">
+                <p className="text-gray-300 font-mono text-xs">
                   {pageState.project.id}
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 font-medium">Collaborators</p>
-                <p className="text-gray-900">
+                <p className="text-gray-300">
                   {pageState.project.collaborators?.length || 0}
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 font-medium">Tasks</p>
-                <p className="text-gray-900">
+                <p className="text-gray-300">
                   {pageState.project.tasks?.length || 0}
                 </p>
               </div>

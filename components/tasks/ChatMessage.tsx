@@ -200,7 +200,7 @@ export default function ChatMessage({
             "rounded-lg px-4 py-2 word-wrap break-words",
             isCurrentUser
               ? "bg-blue-500 text-white rounded-br-none"
-              : "bg-gray-100 text-gray-900 rounded-bl-none"
+              : "bg-gray-100 text-gray-300 rounded-bl-none"
           )}
         >
           <p className="text-sm leading-relaxed">

@@ -180,7 +180,7 @@ export default function TaskCard({
         </div>
 
         {/* Title */}
-        <h3 className="mb-2 text-base font-semibold text-gray-900 line-clamp-2">
+        <h3 className="mb-2 text-base font-semibold text-gray-300 line-clamp-2">
           {task.title}
         </h3>
 

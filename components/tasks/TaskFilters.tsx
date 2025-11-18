@@ -168,13 +168,13 @@ export default function TaskFilters({
     >
       {/* Title/Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+        <h3 className="text-lg font-semibold text-gray-300">Filters</h3>
         {hasActiveFilters && (
           <Button
             variant="ghost"
             size="sm"
             onClick={handleClearFilters}
-            className="text-gray-600 hover:text-gray-900"
+            className="text-gray-600 hover:text-gray-300"
           >
             Clear All
           </Button>

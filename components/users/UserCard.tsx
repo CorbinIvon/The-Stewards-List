@@ -173,7 +173,7 @@ export default function UserCard({
               <div className="flex-1 min-w-0">
                 {/* Name and Username */}
                 <div className="mb-2">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-300 truncate">
                     {user.displayName}
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-600 truncate">

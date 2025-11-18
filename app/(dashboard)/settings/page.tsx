@@ -208,7 +208,7 @@ export default function SettingsPage(): React.ReactElement {
             </CardHeader>
             <CardBody className="space-y-4">
               <div>
-                <h4 className="font-semibold text-gray-900">Password</h4>
+                <h4 className="font-semibold text-gray-300">Password</h4>
                 <p className="mt-1 text-sm text-gray-600">
                   Change your password to keep your account secure
                 </p>
@@ -220,14 +220,14 @@ export default function SettingsPage(): React.ReactElement {
                   <div>
                     <label
                       htmlFor="current-password"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-500"
                     >
                       Current Password
                     </label>
                     <input
                       id="current-password"
                       type="password"
-                      className="mt-1 block w-full rounded-lg border border-slate-700 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-300 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       placeholder="Enter your current password"
                     />
                   </div>
@@ -235,14 +235,14 @@ export default function SettingsPage(): React.ReactElement {
                   <div>
                     <label
                       htmlFor="new-password"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-500"
                     >
                       New Password
                     </label>
                     <input
                       id="new-password"
                       type="password"
-                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-300 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       placeholder="Enter a new password"
                     />
                   </div>
@@ -250,14 +250,14 @@ export default function SettingsPage(): React.ReactElement {
                   <div>
                     <label
                       htmlFor="confirm-password"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-500"
                     >
                       Confirm New Password
                     </label>
                     <input
                       id="confirm-password"
                       type="password"
-                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-300 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       placeholder="Confirm your new password"
                     />
                   </div>
@@ -299,7 +299,7 @@ export default function SettingsPage(): React.ReactElement {
               {/* Theme Preference */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-semibold text-gray-900">Theme</h4>
+                  <h4 className="font-semibold text-gray-300">Theme</h4>
                   <p className="mt-1 text-sm text-gray-600">
                     Choose your preferred application theme
                   </p>
@@ -361,33 +361,33 @@ export default function SettingsPage(): React.ReactElement {
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-500">
                     Email
                   </label>
-                  <p className="mt-1 text-gray-900">{user?.email}</p>
+                  <p className="mt-1 text-gray-300">{user?.email}</p>
                 </div>
 
                 {/* Username */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-500">
                     Username
                   </label>
-                  <p className="mt-1 text-gray-900">{user?.username}</p>
+                  <p className="mt-1 text-gray-300">{user?.username}</p>
                 </div>
 
                 {/* Role */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-500">
                     Role
                   </label>
-                  <p className="mt-1 text-gray-900 capitalize">
+                  <p className="mt-1 text-gray-300 capitalize">
                     {user?.role.toLowerCase()}
                   </p>
                 </div>
 
                 {/* Account Status */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-500">
                     Account Status
                   </label>
                   <p className="mt-1">

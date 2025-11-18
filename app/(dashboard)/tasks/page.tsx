@@ -418,7 +418,7 @@ export default function TasksPage(): React.ReactElement {
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tasks</h1>
+          <h1 className="text-3xl font-bold text-gray-300">Tasks</h1>
           <p className="text-gray-600 mt-1">
             Manage and organize your household tasks
           </p>

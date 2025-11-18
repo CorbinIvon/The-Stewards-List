@@ -252,7 +252,7 @@ export default function TaskChat({
     <Card className={cn("flex flex-col", className)}>
       {/* Header */}
       <CardBody className="border-b border-gray-200 pb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-gray-300">
           Comments & Messages
         </h3>
       </CardBody>

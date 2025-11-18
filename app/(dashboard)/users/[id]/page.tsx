@@ -556,7 +556,7 @@ export default function UserDetailPage({
 
         <Card>
           <CardBody className="text-center py-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-gray-300 mb-2">
               User Not Found
             </h2>
             <p className="text-gray-600 mb-6">
@@ -589,7 +589,7 @@ export default function UserDetailPage({
 
         <Card>
           <CardBody className="text-center py-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-gray-300 mb-2">
               Access Denied
             </h2>
             <p className="text-gray-600 mb-6">
@@ -622,7 +622,7 @@ export default function UserDetailPage({
         </Link>
         <span>/</span>
         {pageState.user && (
-          <span className="text-gray-900 font-medium">
+          <span className="text-gray-300 font-medium">
             {pageState.user.displayName}
           </span>
         )}
@@ -810,17 +810,17 @@ export default function UserDetailPage({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-600 font-medium">Username</p>
-                <p className="text-gray-900">{pageState.user.username}</p>
+                <p className="text-gray-300">{pageState.user.username}</p>
               </div>
               <div>
                 <p className="text-gray-600 font-medium">Created</p>
-                <p className="text-gray-900">
+                <p className="text-gray-300">
                   {formatDate(pageState.user.createdAt)}
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 font-medium">Last Login</p>
-                <p className="text-gray-900">
+                <p className="text-gray-300">
                   {pageState.user.lastLoginAt
                     ? formatDateTime(pageState.user.lastLoginAt)
                     : "Never"}
@@ -828,7 +828,7 @@ export default function UserDetailPage({
               </div>
               <div>
                 <p className="text-gray-600 font-medium">User ID</p>
-                <p className="text-gray-900 font-mono text-xs">
+                <p className="text-gray-300 font-mono text-xs">
                   {pageState.user.id}
                 </p>
               </div>

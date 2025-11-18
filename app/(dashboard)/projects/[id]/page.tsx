@@ -378,7 +378,7 @@ export default function ProjectDetailPage(): React.ReactElement {
             Projects
           </Link>
           <span>/</span>
-          <span className="text-gray-900 font-medium">Not Found</span>
+          <span className="text-gray-300 font-medium">Not Found</span>
         </div>
 
         {/* Error Alert */}
@@ -412,7 +412,7 @@ export default function ProjectDetailPage(): React.ReactElement {
             Projects
           </Link>
           <span>/</span>
-          <span className="text-gray-900 font-medium">Access Denied</span>
+          <span className="text-gray-300 font-medium">Access Denied</span>
         </div>
 
         {/* Permission Denied Alert */}
@@ -448,7 +448,7 @@ export default function ProjectDetailPage(): React.ReactElement {
           Projects
         </Link>
         <span>/</span>
-        <span className="text-gray-900 font-medium">
+        <span className="text-gray-300 font-medium">
           {truncateAtWord(state.project.projectName, 50)}
         </span>
       </nav>
@@ -635,7 +635,7 @@ export default function ProjectDetailPage(): React.ReactElement {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Creator */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Creator</h4>
+                  <h4 className="font-medium text-gray-300 mb-2">Creator</h4>
                   <p className="text-gray-700">
                     {state.project.creator?.username || "Unknown"}
                   </p>
@@ -648,7 +648,7 @@ export default function ProjectDetailPage(): React.ReactElement {
 
                 {/* Created Date */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Created</h4>
+                  <h4 className="font-medium text-gray-300 mb-2">Created</h4>
                   <p className="text-gray-700">
                     {formatDateTime(state.project.createdAt)}
                   </p>
@@ -656,7 +656,7 @@ export default function ProjectDetailPage(): React.ReactElement {
 
                 {/* Last Updated */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">
+                  <h4 className="font-medium text-gray-300 mb-2">
                     Last Updated
                   </h4>
                   <p className="text-gray-700">
@@ -666,7 +666,7 @@ export default function ProjectDetailPage(): React.ReactElement {
 
                 {/* Status */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Status</h4>
+                  <h4 className="font-medium text-gray-300 mb-2">Status</h4>
                   <Badge
                     variant={getStatusBadgeVariant(state.project.archived)}
                   >
@@ -676,7 +676,7 @@ export default function ProjectDetailPage(): React.ReactElement {
 
                 {/* Member Count */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Members</h4>
+                  <h4 className="font-medium text-gray-300 mb-2">Members</h4>
                   <p className="text-gray-700">
                     {(state.project.collaborators?.length || 0) + 1}
                   </p>
@@ -684,7 +684,7 @@ export default function ProjectDetailPage(): React.ReactElement {
 
                 {/* Task Count */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Tasks</h4>
+                  <h4 className="font-medium text-gray-300 mb-2">Tasks</h4>
                   <p className="text-gray-700">
                     {state.tasks.length || 0}
                   </p>

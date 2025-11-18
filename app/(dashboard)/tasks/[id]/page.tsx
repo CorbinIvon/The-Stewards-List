@@ -366,7 +366,7 @@ export default function TaskDetailPage(): React.ReactElement {
             Tasks
           </Link>
           <span>/</span>
-          <span className="text-gray-900 font-medium">Not Found</span>
+          <span className="text-gray-300 font-medium">Not Found</span>
         </div>
 
         {/* Error Alert */}
@@ -399,7 +399,7 @@ export default function TaskDetailPage(): React.ReactElement {
             Tasks
           </Link>
           <span>/</span>
-          <span className="text-gray-900 font-medium">Access Denied</span>
+          <span className="text-gray-300 font-medium">Access Denied</span>
         </div>
 
         {/* Permission Denied Alert */}
@@ -434,7 +434,7 @@ export default function TaskDetailPage(): React.ReactElement {
           Tasks
         </Link>
         <span>/</span>
-        <span className="text-gray-900 font-medium">
+        <span className="text-gray-300 font-medium">
           {truncateAtWord(state.task.title, 50)}
         </span>
       </nav>
