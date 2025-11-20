@@ -805,9 +805,14 @@ export default function ProjectDetailPage(): React.ReactElement {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium text-slate-100">
-                          User ID: {collaborator.userId}
+                          {collaborator.user?.displayName ||
+                            collaborator.user?.username ||
+                            "Unknown User"}
                         </p>
                         <p className="text-sm text-slate-400">
+                          {collaborator.user?.email}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">
                           Added {formatDate(collaborator.addedAt)}
                         </p>
                       </div>

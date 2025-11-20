@@ -313,8 +313,8 @@ export interface ProjectWithCreator extends Project {
  */
 export interface ProjectWithRelations extends ProjectWithCreator {
   tasks: Task[];
-  collaborators: ProjectCollaborator[];
-  permissions: ProjectPermission[];
+  collaborators: ProjectCollaboratorWithUser[];
+  permissions: ProjectPermissionWithUser[];
 }
 
 /**
