@@ -300,17 +300,6 @@ export default function TaskDetailPage(): React.ReactElement {
         status: nextStatus,
       });
 
-      // Create task log entry
-      const action: TaskLogAction =
-        nextStatus === TaskStatusEnum.COMPLETED ? TaskLogActionEnum.COMPLETED : TaskLogActionEnum.UPDATED;
-      await apiClient.createTaskLog(state.task.id, {
-        action,
-        note:
-          nextStatus === TaskStatusEnum.COMPLETED
-            ? "Task completed"
-            : `Status changed to ${nextStatus}`,
-      });
-
       setState((prev) => ({
         ...prev,
         task: { ...prev.task, ...updatedTask } as TaskWithOwner,

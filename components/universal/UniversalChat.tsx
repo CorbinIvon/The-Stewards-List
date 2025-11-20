@@ -345,7 +345,16 @@ export default function UniversalChat({
                 return (
                   <div key={message.id} className="flex justify-center py-2">
                     <div className="bg-slate-800 border border-slate-700 rounded px-3 py-1 text-xs text-slate-400 text-center">
-                      {message.message}
+                      <p>{message.message}</p>
+                      <span className="text-xs text-slate-500">
+                        {new Date(message.createdAt).toLocaleTimeString(
+                          [],
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
                     </div>
                   </div>
                 );

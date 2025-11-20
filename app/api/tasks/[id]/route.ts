@@ -473,7 +473,7 @@ export async function PATCH(
         : "UPDATED";
 
     // Update task and create log in transaction
-    const [updatedTask] = await prisma.$transaction([
+    const transactionOperations: any[] = [
       prisma.task.update({
         where: { id },
         data: updateData,
@@ -487,7 +487,38 @@ export async function PATCH(
           note: body.note || undefined,
         } as any,
       }),
-    ]);
+    ];
+
+    // If status changed, create a system chat message
+    if (body.status !== undefined && body.status !== currentTask.status) {
+      const userName = user.displayName || user.username;
+      let statusMessage = "";
+
+      if (body.status === "COMPLETED") {
+        statusMessage = `${userName} marked the task as completed`;
+      } else if (body.status === "IN_PROGRESS") {
+        statusMessage = `${userName} started progress on this task`;
+      } else if (body.status === "TODO" && currentTask.status === "COMPLETED") {
+        statusMessage = `${userName} reopened this task`;
+      } else {
+        statusMessage = `${userName} changed status to ${body.status}`;
+      }
+
+      transactionOperations.push(
+        prisma.universalChat.create({
+          data: {
+            posterId: user.id,
+            associativeKey: `tasks/${id}`,
+            message: statusMessage,
+            isSystem: true,
+            isEdited: false,
+            isDeleted: false,
+          },
+        })
+      );
+    }
+
+    const [updatedTask] = await prisma.$transaction(transactionOperations);
 
     const response: ApiResponse<TaskWithOwner> = {
       success: true,
