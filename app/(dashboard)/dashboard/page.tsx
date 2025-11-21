@@ -9,11 +9,15 @@ import {
   CardTitle,
   Button,
   Spinner,
-  Badge,
+  SortableTable,
+  TableLink,
+  TableBadge,
+  type TableColumn,
 } from "@/components/ui";
 import Alert from "@/components/ui/Alert";
 import { useAuthUser } from "@/lib/auth-context";
 import { apiClient, ApiClientError } from "@/lib/api-client";
+import { type SortDirection } from "@/lib/use-table-sort";
 import type { TaskWithOwner, TaskStatus } from "@/lib/types";
 
 // ============================================================================
@@ -137,6 +141,54 @@ function getAssignedUsers(task: TaskWithOwner): string {
     .join(", ");
 }
 
+/**
+ * Compare function for sorting tasks with custom logic
+ */
+function compareTasksForSort(
+  a: TaskWithOwner,
+  b: TaskWithOwner,
+  column: string,
+  direction: SortDirection
+): number {
+  const multiplier = direction === "asc" ? 1 : -1;
+
+  const statusOrder: Record<TaskStatus, number> = {
+    TODO: 0,
+    IN_PROGRESS: 1,
+    COMPLETED: 2,
+    CANCELLED: 3,
+  };
+
+  const priorityOrder: Record<string, number> = {
+    LOW: 0,
+    MEDIUM: 1,
+    HIGH: 2,
+    URGENT: 3,
+  };
+
+  switch (column) {
+    case "title":
+      return multiplier * a.title.localeCompare(b.title);
+    case "status":
+      return multiplier * ((statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0));
+    case "priority":
+      return multiplier * ((priorityOrder[a.priority] ?? 0) - (priorityOrder[b.priority] ?? 0));
+    case "project":
+      const aProject = a.projectLink?.projectName || a.project?.projectName || "";
+      const bProject = b.projectLink?.projectName || b.project?.projectName || "";
+      return multiplier * aProject.localeCompare(bProject);
+    case "dueDate": {
+      const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+      const bDate = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+      return multiplier * (aDate - bDate);
+    }
+    case "assigned":
+      return multiplier * getAssignedUsers(a).localeCompare(getAssignedUsers(b));
+    default:
+      return 0;
+  }
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -156,6 +208,62 @@ export default function DashboardPage(): React.ReactElement {
     isLoading: true,
     error: null,
   });
+
+  // Define table columns for all task tables
+  const taskTableColumns: TableColumn<TaskWithOwner>[] = [
+    {
+      key: "title",
+      label: "Task Title",
+      render: (task) => (
+        <TableLink href={`/tasks/${task.id}`}>
+          {task.title}
+        </TableLink>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (task) => (
+        <TableBadge variant={getStatusBadgeVariant(task.status)}>
+          {task.status}
+        </TableBadge>
+      ),
+    },
+    {
+      key: "priority",
+      label: "Priority",
+      render: (task) => (
+        <TableBadge
+          variant={
+            task.priority === "URGENT"
+              ? "danger"
+              : task.priority === "HIGH"
+              ? "warning"
+              : "info"
+          }
+        >
+          {task.priority}
+        </TableBadge>
+      ),
+    },
+    {
+      key: "project",
+      label: "Project",
+      render: (task) =>
+        task.projectLink?.projectName || task.project?.projectName || "—",
+    },
+    {
+      key: "dueDate",
+      label: "Due Date",
+      render: (task) =>
+        task.dueDate ? formatDate(task.dueDate) : "No due date",
+    },
+    {
+      key: "assigned",
+      label: "Assigned",
+      render: (task) => getAssignedUsers(task),
+    },
+  ];
 
   // =========================================================================
   // DATA FETCHING
@@ -390,80 +498,14 @@ export default function DashboardPage(): React.ReactElement {
               <CardTitle className="text-blue-400">📅 Upcoming Tasks (Assigned to You)</CardTitle>
             </CardHeader>
             <CardBody>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Task Title
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Priority
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Project
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Due Date
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Assigned
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.upcomingTasks.map((task) => (
-                      <tr
-                        key={task.id}
-                        className="border-b border-slate-700 hover:bg-[color:var(--panel)]"
-                      >
-                        <td className="px-4 py-3 font-medium text-[color:var(--text)]">
-                          <Link
-                            href={`/tasks/${task.id}`}
-                            className="hover:text-blue-600 hover:underline"
-                          >
-                            {task.title}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={getStatusBadgeVariant(task.status)}
-                            size="sm"
-                          >
-                            {task.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={
-                              task.priority === "URGENT"
-                                ? "danger"
-                                : task.priority === "HIGH"
-                                ? "warning"
-                                : "info"
-                            }
-                            size="sm"
-                          >
-                            {task.priority}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-[color:var(--muted)]">
-                          {task.projectLink?.projectName || task.project?.projectName || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-[color:var(--muted)]">
-                          {task.dueDate ? formatDate(task.dueDate) : "No due date"}
-                        </td>
-                        <td className="px-4 py-3 text-[color:var(--muted)]">
-                          {getAssignedUsers(task)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <SortableTable
+                data={state.upcomingTasks}
+                columns={taskTableColumns}
+                rowKey={(task) => task.id}
+                defaultSortColumn="title"
+                compareFn={compareTasksForSort}
+                headerHoverColor="hover:text-blue-400"
+              />
             </CardBody>
           </Card>
         )}
@@ -482,92 +524,14 @@ export default function DashboardPage(): React.ReactElement {
                 No tasks yet. Create your first task to get started!
               </p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Task Title
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Priority
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Project
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Due Date
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Assigned
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.recentTasks.map((task) => {
-                      const overdue = isTaskOverdue(task);
-                      return (
-                        <tr
-                          key={task.id}
-                          className={`border-b border-[color:var(--border)] hover:bg-[color:var(--panel)] ${
-                            overdue ? "bg-red-900/20" : ""
-                          }`}
-                        >
-                          <td className="px-4 py-3 font-medium text-[color:var(--text)]">
-                            <Link
-                              href={`/tasks/${task.id}`}
-                              className="hover:text-blue-600 hover:underline"
-                            >
-                              {task.title}
-                              {overdue && (
-                                <span className="ml-2 text-xs bg-red-600 text-white px-2 py-1 rounded">
-                                  Overdue
-                                </span>
-                              )}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge
-                              variant={getStatusBadgeVariant(task.status)}
-                              size="sm"
-                            >
-                              {task.status}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge
-                              variant={
-                                task.priority === "URGENT"
-                                  ? "danger"
-                                  : task.priority === "HIGH"
-                                  ? "warning"
-                                  : "info"
-                              }
-                              size="sm"
-                            >
-                              {task.priority}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-[color:var(--muted)]">
-                            {task.projectLink?.projectName || task.project?.projectName || "—"}
-                          </td>
-                          <td className={`px-4 py-3 ${overdue ? "font-semibold text-red-400" : "text-[color:var(--muted)]"}`}>
-                            {task.dueDate
-                              ? formatDate(task.dueDate)
-                              : "No due date"}
-                          </td>
-                          <td className="px-4 py-3 text-[color:var(--muted)]">
-                            {getAssignedUsers(task)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <SortableTable
+                data={state.recentTasks}
+                columns={taskTableColumns}
+                rowKey={(task) => task.id}
+                defaultSortColumn="title"
+                compareFn={compareTasksForSort}
+                rowClassName={(task) => (isTaskOverdue(task) ? "bg-red-900/20" : "")}
+              />
             )}
           </CardBody>
         </Card>
@@ -582,80 +546,15 @@ export default function DashboardPage(): React.ReactElement {
               <CardTitle className="text-red-400">⚠️ Overdue Tasks</CardTitle>
             </CardHeader>
             <CardBody>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Task Title
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Priority
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Project
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Due Date
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Assigned
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.overdueTasks.map((task) => (
-                      <tr
-                        key={task.id}
-                        className="border-b border-slate-700 hover:bg-[color:var(--panel)] bg-red-900/20"
-                      >
-                        <td className="px-4 py-3 font-medium text-[color:var(--text)]">
-                          <Link
-                            href={`/tasks/${task.id}`}
-                            className="hover:text-blue-600 hover:underline"
-                          >
-                            {task.title}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={getStatusBadgeVariant(task.status)}
-                            size="sm"
-                          >
-                            {task.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={
-                              task.priority === "URGENT"
-                                ? "danger"
-                                : task.priority === "HIGH"
-                                ? "warning"
-                                : "info"
-                            }
-                            size="sm"
-                          >
-                            {task.priority}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-[color:var(--muted)]">
-                          {task.projectLink?.projectName || task.project?.projectName || "—"}
-                        </td>
-                        <td className="px-4 py-3 font-semibold text-red-400">
-                          {task.dueDate ? formatDate(task.dueDate) : "No due date"}
-                        </td>
-                        <td className="px-4 py-3 text-[color:var(--muted)]">
-                          {getAssignedUsers(task)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <SortableTable
+                data={state.overdueTasks}
+                columns={taskTableColumns}
+                rowKey={(task) => task.id}
+                defaultSortColumn="title"
+                compareFn={compareTasksForSort}
+                rowClassName="bg-red-900/20"
+                headerHoverColor="hover:text-red-400"
+              />
             </CardBody>
           </Card>
         )}

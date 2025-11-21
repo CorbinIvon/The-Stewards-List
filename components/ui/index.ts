@@ -43,3 +43,13 @@ export { Spinner, type SpinnerProps } from "./Spinner";
 
 // Alert component
 export { default as Alert, type AlertProps } from "./Alert";
+
+// SortableTable component
+export {
+  SortableTable,
+  TableLink,
+  TableBadge,
+  type SortableTableProps,
+  type TableColumn,
+  type CellRenderer,
+} from "./SortableTable";
