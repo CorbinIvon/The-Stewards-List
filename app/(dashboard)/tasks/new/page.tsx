@@ -45,6 +45,7 @@ interface FormState {
   frequency: TaskFrequency | "";
   dueDate: string;
   projectId: string | "";
+  assignedUserIds: string[];
 }
 
 /**
@@ -66,9 +67,13 @@ interface PageState {
   isLoading: boolean;
   isSubmitting: boolean;
   isLoadingProjects: boolean;
+  isLoadingUsers: boolean;
   error: string | null;
   successMessage: string | null;
   projects: ProjectWithRelations[];
+  users: Array<{ id: string; username: string; displayName: string; email: string }>;
+  createdTaskId: string | null;
+  isAssigningUsers: boolean;
 }
 
 // ============================================================================
@@ -186,6 +191,7 @@ export default function NewTaskPage(): React.ReactElement {
     frequency: "",
     dueDate: "",
     projectId: projectIdParam,
+    assignedUserIds: [],
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -193,9 +199,13 @@ export default function NewTaskPage(): React.ReactElement {
     isLoading: authLoading,
     isSubmitting: false,
     isLoadingProjects: false,
+    isLoadingUsers: false,
     error: null,
     successMessage: null,
     projects: [],
+    users: [],
+    createdTaskId: null,
+    isAssigningUsers: false,
   });
 
   // =========================================================================
@@ -221,8 +231,9 @@ export default function NewTaskPage(): React.ReactElement {
 
     setPageState((prev) => ({ ...prev, isLoading: false }));
 
-    // Load projects for the dropdown
+    // Load projects and users for the dropdowns
     loadProjects();
+    loadUsers();
   }, [authLoading, currentUser, router]);
 
   /**
@@ -243,6 +254,28 @@ export default function NewTaskPage(): React.ReactElement {
       setPageState((prev) => ({
         ...prev,
         isLoadingProjects: false,
+      }));
+    }
+  };
+
+  /**
+   * Load users from API for the assignee selector
+   */
+  const loadUsers = async (): Promise<void> => {
+    try {
+      setPageState((prev) => ({ ...prev, isLoadingUsers: true }));
+
+      const response = await apiClient.getUsers(1, 100);
+      setPageState((prev) => ({
+        ...prev,
+        users: response.data,
+        isLoadingUsers: false,
+      }));
+    } catch (err) {
+      console.error("Failed to load users:", err);
+      setPageState((prev) => ({
+        ...prev,
+        isLoadingUsers: false,
       }));
     }
   };
@@ -270,6 +303,43 @@ export default function NewTaskPage(): React.ReactElement {
       setErrors((prev) => ({
         ...prev,
         [name]: undefined,
+      }));
+    }
+  };
+
+  /**
+   * Handle assignee selection change
+   */
+  const handleAssigneeChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
+    const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
+    setForm((prev) => ({
+      ...prev,
+      assignedUserIds: selectedOptions,
+    }));
+  };
+
+  /**
+   * Assign users to the created task
+   */
+  const assignUsersToTask = async (taskId: string): Promise<void> => {
+    if (form.assignedUserIds.length === 0) {
+      return;
+    }
+
+    try {
+      setPageState((prev) => ({ ...prev, isAssigningUsers: true }));
+
+      for (const userId of form.assignedUserIds) {
+        await apiClient.assignTask(taskId, { userId });
+      }
+
+      setPageState((prev) => ({ ...prev, isAssigningUsers: false }));
+    } catch (err) {
+      console.error("Error assigning users:", err);
+      setPageState((prev) => ({
+        ...prev,
+        isAssigningUsers: false,
+        error: "Task created but failed to assign users",
       }));
     }
   };
@@ -305,10 +375,16 @@ export default function NewTaskPage(): React.ReactElement {
       // Create task via API
       const newTask = await apiClient.createTask(request);
 
+      // Assign users if any selected
+      if (form.assignedUserIds.length > 0) {
+        await assignUsersToTask(newTask.id);
+      }
+
       // Show success message
       setPageState((prev) => ({
         ...prev,
         isSubmitting: false,
+        createdTaskId: newTask.id,
         successMessage: "Task created successfully! Redirecting...",
       }));
 
@@ -574,14 +650,34 @@ export default function NewTaskPage(): React.ReactElement {
               )}
             </div>
 
-            {/* Assignee Info */}
-            <div className="bg-slate-800 rounded-lg p-4 text-center border border-slate-700">
-              <p className="flex items-center justify-center text-sm font-medium text-slate-300 mb-2">
+            {/* Assignee Selector */}
+            <div className="border-b border-slate-700 pb-4 mb-4">
+              <label className="flex items-center text-sm font-medium text-slate-300 mb-3">
                 <span className="text-lg mr-2">👤</span>
-                Assignee
-              </p>
-              <p className="text-xs text-slate-400">
-                Will be assigned after creation
+                Assign To
+              </label>
+              {pageState.isLoadingUsers ? (
+                <div className="flex items-center gap-2 py-2">
+                  <Spinner size="sm" />
+                  <span className="text-slate-400 text-sm">Loading users...</span>
+                </div>
+              ) : (
+                <select
+                  multiple
+                  value={form.assignedUserIds}
+                  onChange={handleAssigneeChange}
+                  disabled={pageState.isSubmitting || pageState.isLoadingUsers}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-slate-100 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {pageState.users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.displayName || user.username} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-slate-400 text-xs mt-2">
+                Hold Ctrl/Cmd to select multiple users
               </p>
             </div>
           </div>

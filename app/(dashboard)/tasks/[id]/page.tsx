@@ -580,6 +580,25 @@ export default function TaskDetailPage(): React.ReactElement {
                 )}
               </div>
 
+              {/* Assigned To */}
+              <div className="pb-4 border-b border-slate-700">
+                <p className="text-slate-400 font-medium mb-2">Assigned To</p>
+                {state.task.assignments && state.task.assignments.length > 0 ? (
+                  <div className="space-y-2">
+                    {state.task.assignments.map((assignment) => (
+                      <div key={assignment.id} className="bg-slate-700 rounded px-2 py-1">
+                        <p className="text-slate-100 text-sm">
+                          {assignment.user?.displayName || assignment.user?.username || "Unknown"}
+                        </p>
+                        <p className="text-slate-400 text-xs">{assignment.user?.email}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-400 text-sm">No assignments</p>
+                )}
+              </div>
+
               {/* Project */}
               <div className="pb-4 border-b border-slate-700">
                 <p className="text-slate-400 font-medium mb-2">Project</p>

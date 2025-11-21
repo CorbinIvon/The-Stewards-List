@@ -30,6 +30,8 @@ interface DashboardStats {
 interface DashboardState {
   stats: DashboardStats;
   recentTasks: TaskWithOwner[];
+  overdueTasks: TaskWithOwner[];
+  upcomingTasks: TaskWithOwner[];
   isLoading: boolean;
   error: string | null;
 }
@@ -37,6 +39,24 @@ interface DashboardState {
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
+
+/**
+ * Check if task is overdue
+ */
+function isTaskOverdue(task: TaskWithOwner): boolean {
+  if (task.status === "COMPLETED" || !task.dueDate) {
+    return false;
+  }
+  return new Date(task.dueDate) < new Date();
+}
+
+/**
+ * Check if task is assigned to user
+ */
+function isTaskAssignedToUser(task: TaskWithOwner, userId: string | undefined): boolean {
+  if (!userId) return false;
+  return task.assignments?.some((a) => a.userId === userId) ?? false;
+}
 
 /**
  * Calculate dashboard statistics from tasks
@@ -55,10 +75,8 @@ function calculateStats(
   };
 
   tasks.forEach((task) => {
-    // Check if task is assigned to current user
-    // Note: This assumes task assignments are tracked elsewhere
-    // For now, we count tasks owned by the user
-    if (task.ownerId === currentUserId) {
+    // Check if task is assigned to current user (via TaskAssignment)
+    if (isTaskAssignedToUser(task, currentUserId)) {
       stats.tasksAssignedToMe++;
     }
 
@@ -68,11 +86,7 @@ function calculateStats(
     }
 
     // Count overdue tasks (not completed and due date passed)
-    if (
-      task.status !== "COMPLETED" &&
-      task.dueDate &&
-      new Date(task.dueDate) < now
-    ) {
+    if (isTaskOverdue(task)) {
       stats.overdueTasks++;
     }
   });
@@ -125,6 +139,8 @@ export default function DashboardPage(): React.ReactElement {
       overdueTasks: 0,
     },
     recentTasks: [],
+    overdueTasks: [],
+    upcomingTasks: [],
     isLoading: true,
     error: null,
   });
@@ -157,10 +173,36 @@ export default function DashboardPage(): React.ReactElement {
           )
           .slice(0, 8);
 
+        // Get overdue tasks (not completed, due date in past, sorted by due date)
+        const now = new Date();
+        const overdueTasks = allTasks
+          .filter((task) => isTaskOverdue(task))
+          .sort(
+            (a, b) =>
+              new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()
+          );
+
+        // Get upcoming tasks (not completed, due date in future, assigned to current user, sorted by due date)
+        const upcoming = allTasks.filter((task) => {
+          if (task.status === "COMPLETED" || !task.dueDate) return false;
+          const dueDate = new Date(task.dueDate);
+          return (
+            dueDate >= now && isTaskAssignedToUser(task, currentUser?.id)
+          );
+        });
+        const upcomingTasks = upcoming
+          .sort(
+            (a, b) =>
+              new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()
+          )
+          .slice(0, 8);
+
         setState((prev) => ({
           ...prev,
           stats,
           recentTasks,
+          overdueTasks,
+          upcomingTasks,
           isLoading: false,
         }));
       } catch (err) {
@@ -278,7 +320,7 @@ export default function DashboardPage(): React.ReactElement {
                   {state.stats.tasksAssignedToMe}
                 </span>
               </div>
-              <p className="text-xs text-gray-500">Tasks owned by you</p>
+              <p className="text-xs text-gray-500">Tasks assigned to you</p>
             </CardBody>
           </Card>
 
@@ -362,10 +404,186 @@ export default function DashboardPage(): React.ReactElement {
                     </tr>
                   </thead>
                   <tbody>
-                    {state.recentTasks.map((task) => (
+                    {state.recentTasks.map((task) => {
+                      const overdue = isTaskOverdue(task);
+                      return (
+                        <tr
+                          key={task.id}
+                          className={`border-b border-[color:var(--border)] hover:bg-[color:var(--panel)] ${
+                            overdue ? "bg-red-900/20" : ""
+                          }`}
+                        >
+                          <td className="px-4 py-3 font-medium text-[color:var(--text)]">
+                            <Link
+                              href={`/tasks/${task.id}`}
+                              className="hover:text-blue-600 hover:underline"
+                            >
+                              {task.title}
+                              {overdue && (
+                                <span className="ml-2 text-xs bg-red-600 text-white px-2 py-1 rounded">
+                                  Overdue
+                                </span>
+                              )}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              variant={getStatusBadgeVariant(task.status)}
+                              size="sm"
+                            >
+                              {task.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              variant={
+                                task.priority === "URGENT"
+                                  ? "danger"
+                                  : task.priority === "HIGH"
+                                  ? "warning"
+                                  : "info"
+                              }
+                              size="sm"
+                            >
+                              {task.priority}
+                            </Badge>
+                          </td>
+                          <td className={`px-4 py-3 ${overdue ? "font-semibold text-red-400" : "text-[color:var(--muted)]"}`}>
+                            {task.dueDate
+                              ? formatDate(task.dueDate)
+                              : "No due date"}
+                          </td>
+                          <td className="px-4 py-3 text-[color:var(--muted)]">
+                            {task.owner?.username || "Unknown"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* ===================================================================
+            OVERDUE TASKS SECTION
+            =================================================================== */}
+
+        {state.overdueTasks.length > 0 && (
+          <Card className="border-red-500/50 bg-red-900/10">
+            <CardHeader>
+              <CardTitle className="text-red-400">⚠️ Overdue Tasks</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700">
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Task Title
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Priority
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Due Date
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Owner
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.overdueTasks.map((task) => (
                       <tr
                         key={task.id}
-                        className="border-b border-[color:var(--border)] hover:bg-[color:var(--panel)]"
+                        className="border-b border-slate-700 hover:bg-[color:var(--panel)] bg-red-900/20"
+                      >
+                        <td className="px-4 py-3 font-medium text-[color:var(--text)]">
+                          <Link
+                            href={`/tasks/${task.id}`}
+                            className="hover:text-blue-600 hover:underline"
+                          >
+                            {task.title}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            variant={getStatusBadgeVariant(task.status)}
+                            size="sm"
+                          >
+                            {task.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            variant={
+                              task.priority === "URGENT"
+                                ? "danger"
+                                : task.priority === "HIGH"
+                                ? "warning"
+                                : "info"
+                            }
+                            size="sm"
+                          >
+                            {task.priority}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-red-400">
+                          {task.dueDate ? formatDate(task.dueDate) : "No due date"}
+                        </td>
+                        <td className="px-4 py-3 text-[color:var(--muted)]">
+                          {task.owner?.username || "Unknown"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* ===================================================================
+            UPCOMING TASKS SECTION
+            =================================================================== */}
+
+        {state.upcomingTasks.length > 0 && (
+          <Card className="border-blue-500/50 bg-blue-900/10">
+            <CardHeader>
+              <CardTitle className="text-blue-400">📅 Upcoming Tasks (Assigned to You)</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700">
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Task Title
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Priority
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Due Date
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Owner
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.upcomingTasks.map((task) => (
+                      <tr
+                        key={task.id}
+                        className="border-b border-slate-700 hover:bg-[color:var(--panel)]"
                       >
                         <td className="px-4 py-3 font-medium text-[color:var(--text)]">
                           <Link
@@ -398,9 +616,7 @@ export default function DashboardPage(): React.ReactElement {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-[color:var(--muted)]">
-                          {task.dueDate
-                            ? formatDate(task.dueDate)
-                            : "No due date"}
+                          {task.dueDate ? formatDate(task.dueDate) : "No due date"}
                         </td>
                         <td className="px-4 py-3 text-[color:var(--muted)]">
                           {task.owner?.username || "Unknown"}
@@ -410,9 +626,9 @@ export default function DashboardPage(): React.ReactElement {
                   </tbody>
                 </table>
               </div>
-            )}
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        )}
       </div>
     </div>
   );

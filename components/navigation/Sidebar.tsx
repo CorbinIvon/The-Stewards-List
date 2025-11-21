@@ -219,17 +219,7 @@ export function Sidebar({
       href: "/users",
       icon: "users",
       requiredRoles: [UserRole.ADMIN, UserRole.MANAGER],
-    },
-    {
-      label: "Profile",
-      href: "/profile",
-      icon: "profile",
-    },
-    {
-      label: "Settings",
-      href: "/settings",
-      icon: "settings",
-    },
+    }
   ];
 
   /**

@@ -81,11 +81,14 @@ interface PageState {
   isLoadingTask: boolean;
   isSubmitting: boolean;
   isLoadingProjects: boolean;
+  isLoadingUsers: boolean;
   error: string | null;
   successMessage: string | null;
   notFound: boolean;
   permissionDenied: boolean;
   projects: ProjectWithRelations[];
+  users: Array<{ id: string; username: string; displayName: string; email: string }>;
+  isManagingAssignments: boolean;
 }
 
 // ============================================================================
@@ -244,12 +247,17 @@ export default function EditTaskPage({
     isLoadingTask: true,
     isSubmitting: false,
     isLoadingProjects: false,
+    isLoadingUsers: false,
     error: null,
     successMessage: null,
     notFound: false,
     permissionDenied: false,
     projects: [],
+    users: [],
+    isManagingAssignments: false,
   });
+
+  const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
 
   const [formData, setFormData] = useState<FormState>({
     title: "",
@@ -285,6 +293,28 @@ export default function EditTaskPage({
       setPageState((prev) => ({
         ...prev,
         isLoadingProjects: false,
+      }));
+    }
+  };
+
+  /**
+   * Load users from API for the assignee selector
+   */
+  const loadUsers = async (): Promise<void> => {
+    try {
+      setPageState((prev) => ({ ...prev, isLoadingUsers: true }));
+
+      const response = await apiClient.getUsers(1, 100);
+      setPageState((prev) => ({
+        ...prev,
+        users: response.data,
+        isLoadingUsers: false,
+      }));
+    } catch (err) {
+      console.error("Failed to load users:", err);
+      setPageState((prev) => ({
+        ...prev,
+        isLoadingUsers: false,
       }));
     }
   };
@@ -326,6 +356,10 @@ export default function EditTaskPage({
           projectId: task.projectId || "",
         });
 
+        // Set assigned user IDs from task assignments
+        const assignedIds = task.assignments?.map((a) => a.userId) || [];
+        setAssignedUserIds(assignedIds);
+
         setPageState((prev) => ({
           ...prev,
           task,
@@ -363,6 +397,7 @@ export default function EditTaskPage({
     if (taskId) {
       fetchTask();
       loadProjects();
+      loadUsers();
     }
   }, [taskId, user?.id, user?.role]);
 
@@ -389,6 +424,52 @@ export default function EditTaskPage({
       setFormErrors((prev) => ({
         ...prev,
         [name]: undefined,
+      }));
+    }
+  };
+
+  /**
+   * Handle assignee selection change
+   */
+  const handleAssigneeChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
+    const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
+    setAssignedUserIds(selectedOptions);
+  };
+
+  /**
+   * Sync assignments with API
+   */
+  const syncAssignments = async (): Promise<void> => {
+    if (!pageState.task) return;
+
+    try {
+      setPageState((prev) => ({ ...prev, isManagingAssignments: true }));
+
+      const currentAssignedIds = pageState.task.assignments?.map((a) => a.userId) || [];
+
+      // Find users to add (in new list but not in current)
+      const usersToAdd = assignedUserIds.filter((id) => !currentAssignedIds.includes(id));
+
+      // Find users to remove (in current list but not in new)
+      const usersToRemove = currentAssignedIds.filter((id) => !assignedUserIds.includes(id));
+
+      // Add new assignments
+      for (const userId of usersToAdd) {
+        await apiClient.assignTask(pageState.task.id, { userId });
+      }
+
+      // Remove assignments
+      for (const userId of usersToRemove) {
+        await apiClient.unassignTask(pageState.task.id, { userId });
+      }
+
+      setPageState((prev) => ({ ...prev, isManagingAssignments: false }));
+    } catch (err) {
+      console.error("Error syncing assignments:", err);
+      setPageState((prev) => ({
+        ...prev,
+        isManagingAssignments: false,
+        error: "Failed to update assignments",
       }));
     }
   };
@@ -430,6 +511,9 @@ export default function EditTaskPage({
 
       // Submit update
       await apiClient.updateTask(taskId, updatePayload);
+
+      // Sync assignments
+      await syncAssignments();
 
       // Show success message
       setPageState((prev) => ({
@@ -695,6 +779,33 @@ export default function EditTaskPage({
               error={formErrors.projectId}
               disabled={pageState.isSubmitting || pageState.isLoadingProjects}
             />
+
+            {/* Assignee Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-3">
+                Assign To (Hold Ctrl/Cmd to select multiple)
+              </label>
+              {pageState.isLoadingUsers ? (
+                <div className="flex items-center gap-2 py-2">
+                  <Spinner size="sm" />
+                  <span className="text-slate-400 text-sm">Loading users...</span>
+                </div>
+              ) : (
+                <select
+                  multiple
+                  value={assignedUserIds}
+                  onChange={handleAssigneeChange}
+                  disabled={pageState.isSubmitting || pageState.isLoadingUsers || pageState.isManagingAssignments}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-slate-100 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {pageState.users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.displayName || user.username} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
 
             {/* Form Actions */}
             <div className="flex gap-3 pt-6">

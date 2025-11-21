@@ -130,6 +130,7 @@ export interface TaskWithOwner extends Task {
   owner: UserPublic;
   projectLink?: ProjectInfo;
   project?: ProjectInfo;
+  assignments?: TaskAssignmentWithRelations[];
 }
 
 /**

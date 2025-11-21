@@ -97,6 +97,16 @@ function getPriorityBadgeVariant(
 }
 
 /**
+ * Check if task is overdue
+ */
+function isTaskOverdue(task: TaskWithOwner): boolean {
+  if (task.status === TaskStatusEnum.COMPLETED || !task.dueDate) {
+    return false;
+  }
+  return new Date(task.dueDate) < new Date();
+}
+
+/**
  * Check if user has permission to create tasks
  */
 function canCreateTask(userRole: UserRole | undefined): boolean {
@@ -116,6 +126,8 @@ interface TaskCardProps {
  * Individual task card component
  */
 function TaskCard({ task, onClick }: TaskCardProps): React.ReactElement {
+  const overdue = isTaskOverdue(task);
+
   return (
     <div
       className="cursor-pointer"
@@ -129,11 +141,20 @@ function TaskCard({ task, onClick }: TaskCardProps): React.ReactElement {
         }
       }}
     >
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className={`hover:shadow-md transition-shadow ${
+        overdue ? "border-red-500/50 bg-red-900/10" : ""
+      }`}>
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <CardTitle className="truncate">{task.title}</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="truncate">{task.title}</CardTitle>
+                {overdue && (
+                  <span className="text-xs bg-red-600 text-white px-2 py-1 rounded whitespace-nowrap flex-shrink-0">
+                    Overdue
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-gray-500 mt-1">
                 by{" "}
                 {task.owner.displayName ||
@@ -164,15 +185,17 @@ function TaskCard({ task, onClick }: TaskCardProps): React.ReactElement {
             </p>
           )}
 
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs">
             {task.dueDate ? (
-              <span>Due: {formatDate(task.dueDate)}</span>
+              <span className={overdue ? "font-semibold text-red-400" : "text-gray-500"}>
+                Due: {formatDate(task.dueDate)}
+              </span>
             ) : (
-              <span>No due date</span>
+              <span className="text-gray-500">No due date</span>
             )}
 
             {task.completedAt && (
-              <span>Completed: {formatDate(task.completedAt)}</span>
+              <span className="text-gray-500">Completed: {formatDate(task.completedAt)}</span>
             )}
           </div>
         </CardBody>
@@ -386,6 +409,18 @@ export default function TasksPage(): React.ReactElement {
     });
   }, [state.tasks, state.filters]);
 
+  // Separate tasks into active and completed
+  const { activeTasks, completedTasks } = useMemo(() => {
+    return {
+      activeTasks: filteredTasks.filter(
+        (task) => task.status !== TaskStatusEnum.COMPLETED
+      ),
+      completedTasks: filteredTasks.filter(
+        (task) => task.status === TaskStatusEnum.COMPLETED
+      ),
+    };
+  }, [filteredTasks]);
+
   // ========================================================================
   // HANDLERS
   // ========================================================================
@@ -511,16 +546,35 @@ export default function TasksPage(): React.ReactElement {
         </Card>
       )}
 
-      {/* Tasks Grid */}
-      {!state.isLoading && filteredTasks.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onClick={() => handleTaskClick(task.id)}
-            />
-          ))}
+      {/* Active Tasks Section */}
+      {!state.isLoading && activeTasks.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold text-gray-300 mb-4">Active Tasks</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {activeTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onClick={() => handleTaskClick(task.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Completed Tasks Section */}
+      {!state.isLoading && completedTasks.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold text-gray-300 mb-4">Completed Tasks</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {completedTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onClick={() => handleTaskClick(task.id)}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -528,6 +582,9 @@ export default function TasksPage(): React.ReactElement {
       {!state.isLoading && filteredTasks.length > 0 && (
         <div className="mt-8 text-center text-sm text-gray-600">
           Showing {filteredTasks.length} of {state.tasks.length} tasks
+          {activeTasks.length > 0 && completedTasks.length > 0 && (
+            <span> ({activeTasks.length} active, {completedTasks.length} completed)</span>
+          )}
         </div>
       )}
     </div>
