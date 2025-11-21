@@ -125,6 +125,18 @@ function formatDate(date: Date | string): string {
   });
 }
 
+/**
+ * Get assigned users as comma-separated string
+ */
+function getAssignedUsers(task: TaskWithOwner): string {
+  if (!task.assignments || task.assignments.length === 0) {
+    return "Unassigned";
+  }
+  return task.assignments
+    .map((assignment) => assignment.user?.username || "Unknown")
+    .join(", ");
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -369,6 +381,94 @@ export default function DashboardPage(): React.ReactElement {
         </Card>
 
         {/* ===================================================================
+            UPCOMING TASKS SECTION
+            =================================================================== */}
+
+        {state.upcomingTasks.length > 0 && (
+          <Card className="border-blue-500/50 bg-blue-900/10">
+            <CardHeader>
+              <CardTitle className="text-blue-400">📅 Upcoming Tasks (Assigned to You)</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700">
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Task Title
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Priority
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Project
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Due Date
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Assigned
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.upcomingTasks.map((task) => (
+                      <tr
+                        key={task.id}
+                        className="border-b border-slate-700 hover:bg-[color:var(--panel)]"
+                      >
+                        <td className="px-4 py-3 font-medium text-[color:var(--text)]">
+                          <Link
+                            href={`/tasks/${task.id}`}
+                            className="hover:text-blue-600 hover:underline"
+                          >
+                            {task.title}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            variant={getStatusBadgeVariant(task.status)}
+                            size="sm"
+                          >
+                            {task.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            variant={
+                              task.priority === "URGENT"
+                                ? "danger"
+                                : task.priority === "HIGH"
+                                ? "warning"
+                                : "info"
+                            }
+                            size="sm"
+                          >
+                            {task.priority}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-[color:var(--muted)]">
+                          {task.projectLink?.projectName || task.project?.projectName || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-[color:var(--muted)]">
+                          {task.dueDate ? formatDate(task.dueDate) : "No due date"}
+                        </td>
+                        <td className="px-4 py-3 text-[color:var(--muted)]">
+                          {getAssignedUsers(task)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* ===================================================================
             RECENT TASKS SECTION
             =================================================================== */}
 
@@ -396,10 +496,13 @@ export default function DashboardPage(): React.ReactElement {
                         Priority
                       </th>
                       <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Project
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
                         Due Date
                       </th>
                       <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Owner
+                        Assigned
                       </th>
                     </tr>
                   </thead>
@@ -448,13 +551,16 @@ export default function DashboardPage(): React.ReactElement {
                               {task.priority}
                             </Badge>
                           </td>
+                          <td className="px-4 py-3 text-[color:var(--muted)]">
+                            {task.projectLink?.projectName || task.project?.projectName || "—"}
+                          </td>
                           <td className={`px-4 py-3 ${overdue ? "font-semibold text-red-400" : "text-[color:var(--muted)]"}`}>
                             {task.dueDate
                               ? formatDate(task.dueDate)
                               : "No due date"}
                           </td>
                           <td className="px-4 py-3 text-[color:var(--muted)]">
-                            {task.owner?.username || "Unknown"}
+                            {getAssignedUsers(task)}
                           </td>
                         </tr>
                       );
@@ -490,10 +596,13 @@ export default function DashboardPage(): React.ReactElement {
                         Priority
                       </th>
                       <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
+                        Project
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
                         Due Date
                       </th>
                       <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Owner
+                        Assigned
                       </th>
                     </tr>
                   </thead>
@@ -533,11 +642,14 @@ export default function DashboardPage(): React.ReactElement {
                             {task.priority}
                           </Badge>
                         </td>
+                        <td className="px-4 py-3 text-[color:var(--muted)]">
+                          {task.projectLink?.projectName || task.project?.projectName || "—"}
+                        </td>
                         <td className="px-4 py-3 font-semibold text-red-400">
                           {task.dueDate ? formatDate(task.dueDate) : "No due date"}
                         </td>
                         <td className="px-4 py-3 text-[color:var(--muted)]">
-                          {task.owner?.username || "Unknown"}
+                          {getAssignedUsers(task)}
                         </td>
                       </tr>
                     ))}
@@ -548,87 +660,6 @@ export default function DashboardPage(): React.ReactElement {
           </Card>
         )}
 
-        {/* ===================================================================
-            UPCOMING TASKS SECTION
-            =================================================================== */}
-
-        {state.upcomingTasks.length > 0 && (
-          <Card className="border-blue-500/50 bg-blue-900/10">
-            <CardHeader>
-              <CardTitle className="text-blue-400">📅 Upcoming Tasks (Assigned to You)</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Task Title
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Priority
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Due Date
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[color:var(--muted)]">
-                        Owner
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.upcomingTasks.map((task) => (
-                      <tr
-                        key={task.id}
-                        className="border-b border-slate-700 hover:bg-[color:var(--panel)]"
-                      >
-                        <td className="px-4 py-3 font-medium text-[color:var(--text)]">
-                          <Link
-                            href={`/tasks/${task.id}`}
-                            className="hover:text-blue-600 hover:underline"
-                          >
-                            {task.title}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={getStatusBadgeVariant(task.status)}
-                            size="sm"
-                          >
-                            {task.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={
-                              task.priority === "URGENT"
-                                ? "danger"
-                                : task.priority === "HIGH"
-                                ? "warning"
-                                : "info"
-                            }
-                            size="sm"
-                          >
-                            {task.priority}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-[color:var(--muted)]">
-                          {task.dueDate ? formatDate(task.dueDate) : "No due date"}
-                        </td>
-                        <td className="px-4 py-3 text-[color:var(--muted)]">
-                          {task.owner?.username || "Unknown"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardBody>
-          </Card>
-        )}
       </div>
     </div>
   );
